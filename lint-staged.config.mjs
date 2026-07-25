@@ -19,7 +19,7 @@ const UMBRAL_ARCHIVOS = 40;
 const conArchivos = (comando, archivos) =>
   `${comando} -- ${archivos.map((archivo) => JSON.stringify(archivo)).join(" ")}`;
 
-export default {
+const configuracion = {
   "*.{ts,tsx}": (archivos) =>
     archivos.length > UMBRAL_ARCHIVOS
       ? ["eslint --fix .", "prettier --write ."]
@@ -33,3 +33,5 @@ export default {
       ? ["prettier --write ."]
       : [conArchivos("prettier --write", archivos)],
 };
+
+export default configuracion;
