@@ -234,6 +234,10 @@ invalida los anteriores del mismo tipo.
   desarrollo local, pero es un requisito de release, no opcional en producción.
 - **Sin índice full-text.** El índice GIN sobre `titulo` + `descripcion` necesita SQL crudo
   (`tsvector`) y se agrega en la Etapa 3, junto con las queries de búsqueda que lo justifican.
+- **Imágenes huérfanas en Cloudinary.** Si alguien sube fotos en el wizard y abandona antes de
+  guardar, los archivos quedan en la cuenta sin ninguna publicación que los referencie. La
+  limpieza periódica está documentada como tarea manual (13.3); automatizarla es un cron de
+  Vercel que compara `public_id` contra la tabla `imagen_publicacion`.
 - **`legacy-peer-deps=true` en `.npmrc`.** Es un conflicto entre peers opcionales de
   `@hookform/resolvers` y `@typeschema/valibot` que no involucra ningún paquete que el proyecto
   importe. Se puede quitar cuando upstream lo resuelva.
