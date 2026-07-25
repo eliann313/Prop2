@@ -8,8 +8,10 @@ import {
   actualizarPublicacion,
   contarPublicacionesDelUsuario,
   crearPublicacionBorrador,
+  publicIdsAEliminar,
   type DatosParaGuardar,
 } from "@/features/publicaciones/publicacionRepository";
+import { borrarImagen } from "@/shared/lib/cloudinaryClient";
 import { promoverAVendedorSiCorresponde } from "@/features/usuarios/promocionDeRol";
 import { RUTAS } from "@/shared/rutas";
 import { exito, fallo, type ResultadoAccion } from "@/shared/types/resultadoAccion";
@@ -37,12 +39,23 @@ export async function guardarPublicacion(
   const datos = validacion.data as DatosParaGuardar;
 
   if (idExistente) {
+    // Se calcula qué imágenes se quitaron ANTES de guardar: después, las filas viejas ya no
+    // están y no habría forma de saber qué archivos quedaron huérfanos en Cloudinary.
+    const aBorrar = await publicIdsAEliminar(
+      idExistente,
+      datos.imagenes.map((imagen) => imagen.publicId),
+    );
+
     // El repositorio filtra por dueño en el WHERE: si la publicación no es de este usuario,
     // devuelve null en vez de modificarla (8.19).
     const actualizada = await actualizarPublicacion(idExistente, usuario.id, datos);
     if (!actualizada) {
       return fallo("No encontramos esa publicación entre las tuyas.");
     }
+
+    // Recién se borra de Cloudinary una vez confirmado que la actualización se aplicó. Al
+    // revés, un fallo al guardar dejaría publicaciones apuntando a archivos ya borrados.
+    await Promise.all(aBorrar.map(borrarImagen));
 
     revalidatePath(RUTAS.dashboard);
     return exito("Cambios guardados.", { id: actualizada.id });

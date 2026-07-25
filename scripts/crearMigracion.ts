@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 // Crea una migración nueva SIN conectarse a la base.
@@ -52,10 +52,32 @@ const archivoSql = join(carpeta, "migration.sql");
 
 mkdirSync(carpeta, { recursive: true });
 
+/**
+ * Borra la carpeta si quedó sin migration.sql adentro.
+ *
+ * Sin esto, cualquier salida por error deja una carpeta de migración vacía — y el aplicador
+ * (`db:migrate:http`) recorre las carpetas asumiendo que todas tienen su SQL, así que revienta
+ * con ENOENT en la siguiente corrida. El error aparece lejos de su causa y confunde.
+ */
+function limpiarSiQuedoVacia() {
+  if (!existsSync(archivoSql)) rmSync(carpeta, { recursive: true, force: true });
+}
+
+process.on("exit", limpiarSiQuedoVacia);
+
+// Se ejecuta el CLI de Prisma con node directamente, en vez de `npx`.
+//
+// Dos motivos, los dos de Windows: `npx` ahí es `npx.cmd`, y desde Node 20 `spawnSync` se
+// niega a ejecutar archivos .cmd sin `shell: true` (falla con EINVAL). Y pasar por un shell
+// traería el problema de siempre con las rutas que tienen espacios. Resolviendo el entrypoint
+// del paquete y llamándolo con `process.execPath`, los argumentos viajan como arreglo y no los
+// interpreta ningún shell.
+const prismaCli = require.resolve("prisma/build/index.js");
+
 execFileSync(
-  process.platform === "win32" ? "npx.cmd" : "npx",
+  process.execPath,
   [
-    "prisma",
+    prismaCli,
     "migrate",
     "diff",
     "--from-schema",
@@ -74,6 +96,10 @@ const sql = readFileSync(archivoSql, "utf8").trim();
 // Un diff vacío significa que el schema no cambió respecto del snapshot. Prisma escribe un
 // comentario de "no difference" en ese caso, así que se detecta por ausencia de sentencias.
 if (!sql || !/\b(CREATE|ALTER|DROP)\b/i.test(sql)) {
+  // Acá el archivo SÍ existe (Prisma escribe un "no difference"), así que la limpieza del
+  // handler de exit no alcanza: hay que borrar la carpeta a mano para no dejar una migración
+  // que no migra nada.
+  rmSync(carpeta, { recursive: true, force: true });
   console.error(
     "El schema no tiene cambios respecto del snapshot: no hay migración que crear.",
   );

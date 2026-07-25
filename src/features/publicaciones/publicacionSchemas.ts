@@ -190,9 +190,24 @@ export const schemaPasoCaracteristicas = z.object({
 });
 
 // ─── Paso 4: multimedia ────────────────────────────────────────────────────────
+
+/** Una imagen ya subida a Cloudinary, tal como la deja el paso de fotos. */
+export const schemaImagen = z.object({
+  publicId: z.string().min(1),
+  url: z.url(),
+  urlThumbnail: z.url(),
+});
+
 export const schemaPasoMultimedia = z.object({
+  // El ORDEN del arreglo es el orden de la galería, y la primera es la portada. No hay un
+  // campo `esPortada` acá a propósito: con un booleano por imagen existen estados inválidos
+  // (cero portadas, o dos), y habría que defenderse de ellos en cada lectura. Derivándola de
+  // la posición, "exactamente una portada" es cierto por construcción.
+  imagenes: z.array(schemaImagen).max(20, "Máximo 20 fotos por publicación").default([]),
   videoUrl: opcional(z.url("Pegá un link válido (YouTube, Vimeo)")),
 });
+
+export type ImagenDePublicacion = z.infer<typeof schemaImagen>;
 
 /**
  * Todos los campos de los cuatro pasos, sin las validaciones cruzadas.

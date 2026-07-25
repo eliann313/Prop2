@@ -56,6 +56,13 @@ export default async function PaginaEditarPublicacion(
     estadoInmueble: publicacion.estadoInmueble ?? undefined,
     videoUrl: publicacion.videoUrl ?? undefined,
     caracteristicaIds: publicacion.caracteristicas.map((c) => c.caracteristicaId),
+    // El repositorio ya las trae ordenadas por `orden`, y la galería trata a la primera como
+    // portada — el mismo criterio con el que se guardaron.
+    imagenes: publicacion.imagenes.map((imagen) => ({
+      publicId: imagen.publicId,
+      url: imagen.url,
+      urlThumbnail: imagen.urlThumbnail ?? imagen.url,
+    })),
   };
 
   return (

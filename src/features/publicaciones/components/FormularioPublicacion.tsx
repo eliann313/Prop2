@@ -77,6 +77,21 @@ export function FormularioPublicacion({
     if (valido) setPasoActual((actual) => actual + 1);
   }
 
+  /**
+   * Cuando el envío falla la validación, lleva al primer paso que tenga un error.
+   *
+   * Sin esto, en modo edición —donde se puede saltar de paso libremente— el usuario aprieta
+   * "Guardar cambios" en el paso 4 y no pasa nada visible, porque el campo en rojo está dos
+   * pasos atrás.
+   */
+  function alFallarValidacion(errores: Record<string, unknown>) {
+    const camposConError = Object.keys(errores);
+    const indice = PASOS_WIZARD.findIndex((item) =>
+      CAMPOS_POR_PASO[item.id].some((campo) => camposConError.includes(campo)),
+    );
+    if (indice >= 0) setPasoActual(indice);
+  }
+
   function onSubmit(datos: DatosPublicacion) {
     iniciarGuardado(async () => {
       const respuesta = await guardarPublicacion(datos, publicacionId);
@@ -93,16 +108,22 @@ export function FormularioPublicacion({
 
   return (
     <FormProvider {...metodos}>
-      <form onSubmit={metodos.handleSubmit(onSubmit)} className="grid gap-6" noValidate>
+      <form
+        onSubmit={metodos.handleSubmit(onSubmit, alFallarValidacion)}
+        className="grid gap-6"
+        noValidate
+      >
         <ol className="flex flex-wrap gap-2" aria-label="Pasos">
           {PASOS_WIZARD.map((item, indice) => (
             <li key={item.id}>
               <button
                 type="button"
-                // Se puede volver a un paso anterior pero no saltar hacia adelante sin
-                // validar: si no, se llega al final con pasos vacíos y el error aparece
-                // recién al enviar, lejos del campo que lo causó.
-                disabled={indice > pasoActual}
+                // Creando: se puede volver atrás pero no saltar hacia adelante sin validar; si
+                // no, se llega al final con pasos vacíos.
+                // Editando: se salta libre, porque los datos YA son válidos y obligar a pasar
+                // por cuatro pantallas para cambiar una foto es fricción pura. Si algo quedó
+                // inválido, alFallarValidacion lleva al paso que corresponde.
+                disabled={indice > pasoActual && !publicacionId}
                 onClick={() => setPasoActual(indice)}
                 className={`rounded-full border px-3 py-1 text-sm ${
                   indice === pasoActual

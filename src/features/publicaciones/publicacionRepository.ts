@@ -124,7 +124,24 @@ export type DatosParaGuardar = {
   estadoInmueble?: EstadoInmueble;
   videoUrl?: string;
   caracteristicaIds: string[];
+  imagenes: { publicId: string; url: string; urlThumbnail: string }[];
 };
+
+/**
+ * Traduce el arreglo ordenado del formulario a filas de imagen_publicacion.
+ *
+ * `orden` es el índice y `esPortada` es "soy el primero": así la base no puede terminar con dos
+ * portadas ni con ninguna, sin necesidad de una restricción extra ni de validarlo al leer.
+ */
+function filasDeImagenes(imagenes: DatosParaGuardar["imagenes"]) {
+  return imagenes.map((imagen, indice) => ({
+    publicId: imagen.publicId,
+    url: imagen.url,
+    urlThumbnail: imagen.urlThumbnail,
+    orden: indice,
+    esPortada: indice === 0,
+  }));
+}
 
 /**
  * Los campos se listan uno por uno en vez de hacer spread del objeto que llega del formulario.
@@ -172,6 +189,7 @@ export function crearPublicacionBorrador(usuarioId: string, datos: DatosParaGuar
       caracteristicas: {
         create: datos.caracteristicaIds.map((caracteristicaId) => ({ caracteristicaId })),
       },
+      imagenes: { create: filasDeImagenes(datos.imagenes) },
     },
     select: { id: true },
   });
@@ -198,8 +216,9 @@ export async function actualizarPublicacion(
 
   if (count === 0) return null;
 
-  // Las características son N–M: se reemplaza el conjunto completo en vez de calcular el
-  // diff, que para una decena de filas no aporta nada y sí agrega lugares donde equivocarse.
+  // Características e imágenes se reemplazan por completo en vez de calcular el diff: para una
+  // decena de filas el diff no aporta nada y sí agrega lugares donde equivocarse. Va en una
+  // transacción para que no exista un instante en que la publicación quedó sin imágenes.
   await prisma.$transaction([
     prisma.publicacionCaracteristica.deleteMany({ where: { publicacionId: id } }),
     prisma.publicacionCaracteristica.createMany({
@@ -208,9 +227,35 @@ export async function actualizarPublicacion(
         caracteristicaId,
       })),
     }),
+    prisma.imagenPublicacion.deleteMany({ where: { publicacionId: id } }),
+    prisma.imagenPublicacion.createMany({
+      data: filasDeImagenes(datos.imagenes).map((imagen) => ({
+        ...imagen,
+        publicacionId: id,
+      })),
+    }),
   ]);
 
   return { id };
+}
+
+/**
+ * public_ids de las imágenes de una publicación que ya NO están en la lista nueva.
+ *
+ * Sirve para borrar de Cloudinary lo que el usuario quitó al editar. Se consulta ANTES de
+ * guardar, porque después las filas viejas ya no existen.
+ */
+export async function publicIdsAEliminar(
+  publicacionId: string,
+  publicIdsQueQuedan: string[],
+): Promise<string[]> {
+  const actuales = await prisma.imagenPublicacion.findMany({
+    where: { publicacionId },
+    select: { publicId: true },
+  });
+
+  const quedan = new Set(publicIdsQueQuedan);
+  return actuales.map((i) => i.publicId).filter((publicId) => !quedan.has(publicId));
 }
 
 /**

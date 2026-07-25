@@ -12,18 +12,19 @@ end-to-end. El CRUD de publicaciones es Etapa 2 y la búsqueda Etapa 3.
 
 ## Stack
 
-| Capa          | Elección                                        |
-| ------------- | ----------------------------------------------- |
-| Framework     | Next.js 16 (App Router) + React 19 + TypeScript |
-| Base de datos | PostgreSQL en Neon                              |
-| ORM           | Prisma 7 (driver adapter de Neon)               |
-| Autenticación | Auth.js v5 — credenciales + Google OAuth        |
-| UI            | Tailwind CSS v4 + shadcn/ui (sobre Radix)       |
-| Validación    | Zod 4 + React Hook Form                         |
-| Emails        | Resend + React Email                            |
-| Rate limiting | Upstash Redis + Ratelimit                       |
-| Tests         | Vitest + React Testing Library                  |
-| Deploy        | Vercel (Hobby)                                  |
+| Capa          | Elección                                           |
+| ------------- | -------------------------------------------------- |
+| Framework     | Next.js 16 (App Router) + React 19 + TypeScript    |
+| Base de datos | PostgreSQL en Neon                                 |
+| ORM           | Prisma 7 (driver adapter de Neon)                  |
+| Autenticación | Auth.js v5 — credenciales + Google OAuth           |
+| UI            | Tailwind CSS v4 + shadcn/ui (sobre Radix)          |
+| Validación    | Zod 4 + React Hook Form                            |
+| Emails        | Resend + React Email                               |
+| Imágenes      | Cloudinary (subida firmada, directa del navegador) |
+| Rate limiting | Upstash Redis + Ratelimit                          |
+| Tests         | Vitest + React Testing Library                     |
+| Deploy        | Vercel (Hobby)                                     |
 
 ## Puesta en marcha
 
@@ -137,6 +138,29 @@ Variables a cargar en Vercel (Settings → Environment Variables), separadas por
 `AUTH_URL` se omite a propósito: Auth.js la deduce del deployment. Si se fija a mano, los links
 de verificación de un preview deployment apuntarían a producción y el usuario terminaría
 confirmando su email contra la base equivocada.
+
+## Fotos: por qué no usamos `next-cloudinary`
+
+Cloudinary sugiere `npm i next-cloudinary` en su onboarding. Acá se usa el SDK oficial
+(`cloudinary`) del lado del servidor y `fetch` desde el navegador. Dos motivos:
+
+1. `next-cloudinary` declara como peer `next: ^12 || ^13 || ^14 || ^15`. **No incluye la 16.**
+   Con el `legacy-peer-deps` de este repo instalaría igual, pero sería compatibilidad no
+   verificada en el camino por el que pasan todas las fotos del sitio.
+2. De esa librería solo usaríamos el widget de subida y un wrapper de `next/image`. Lo que
+   necesitamos —firmar una subida y armar URLs con transformaciones— son ~40 líneas propias.
+
+**Cómo funciona la subida:** el navegador pide una firma a una Server Action (que exige sesión
+y está rate-limitada) y con ella sube el archivo **directo a Cloudinary**, sin pasar por nuestro
+servidor. Además de ahorrar una vuelta de red por foto, es lo que hace que funcione en Vercel:
+las funciones serverless tienen un tope de ~4.5 MB de body y una sola foto de celular lo supera.
+
+Se usa subida **firmada** y no un _unsigned upload preset_: un preset sin firmar es una URL que
+cualquiera puede copiar del bundle del navegador para subir archivos a la cuenta sin límite.
+
+La primera imagen del arreglo es la portada, y `es_portada` se deriva de la posición al guardar.
+Con un booleano por imagen se puede llegar a cero portadas o a dos; derivándola del orden, ese
+estado inválido no existe.
 
 ## Migraciones
 

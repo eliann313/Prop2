@@ -1,5 +1,6 @@
 "use client";
 
+import { GaleriaDeImagenes } from "@/features/publicaciones/components/GaleriaDeImagenes";
 import { useCamposPublicacion } from "@/features/publicaciones/components/useCamposPublicacion";
 import { CampoTexto } from "@/shared/components/CampoTexto";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
@@ -12,8 +13,12 @@ type Props = {
 export function PasoMultimedia({ subidaDeImagenesDisponible }: Props) {
   const {
     register,
+    watch,
+    setValue,
     formState: { errors },
   } = useCamposPublicacion();
+
+  const imagenes = watch("imagenes") ?? [];
 
   return (
     <div className="grid gap-6">
@@ -21,22 +26,28 @@ export function PasoMultimedia({ subidaDeImagenesDisponible }: Props) {
         <p className="text-sm font-medium">Fotos</p>
 
         {subidaDeImagenesDisponible ? (
-          // La galería con reordenamiento y portada entra acá cuando haya credenciales de
-          // Cloudinary. El paso ya existe en el wizard para que sumarla no obligue a
-          // reestructurar el formulario ni a renumerar los pasos.
-          <p className="text-muted-foreground text-sm">
-            La galería de imágenes se habilita en el siguiente incremento.
-          </p>
+          <GaleriaDeImagenes
+            imagenes={imagenes}
+            onCambio={(nuevas) =>
+              setValue("imagenes", nuevas, { shouldDirty: true, shouldValidate: true })
+            }
+          />
         ) : (
           <Alert>
             <AlertDescription>
               La subida de fotos necesita credenciales de Cloudinary (
-              <code>CLOUDINARY_*</code> en el <code>.env</code>). Mientras tanto podés
-              guardar la publicación como borrador: para pasarla a activa hace falta al
-              menos una foto.
+              <code>CLOUDINARY_*</code> en el <code>.env</code>). Podés guardar la
+              publicación como borrador: para pasarla a activa hace falta al menos una
+              foto.
             </AlertDescription>
           </Alert>
         )}
+
+        {errors.imagenes ? (
+          <p className="text-destructive text-sm" role="alert">
+            {errors.imagenes.message}
+          </p>
+        ) : null}
       </div>
 
       <CampoTexto

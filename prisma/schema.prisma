@@ -287,12 +287,19 @@ model Publicacion {
 // Tabla aparte en vez de un array/JSON dentro de Publicacion: permite orden, portada y
 // borrado individual sin reescribir la publicación entera (3.4).
 model ImagenPublicacion {
-  id            String  @id @default(uuid()) @db.Uuid
-  publicacionId String  @map("publicacion_id") @db.Uuid
-  url           String
-  urlThumbnail  String? @map("url_thumbnail")
-  orden         Int     @default(0)
-  esPortada     Boolean @default(false) @map("es_portada")
+  id            String @id @default(uuid()) @db.Uuid
+  publicacionId String @map("publicacion_id") @db.Uuid
+
+  // Identificador del archivo en Cloudinary. Se guarda además de la URL porque es lo que se
+  // necesita para BORRAR el archivo y para pedir transformaciones nuevas. Extraerlo de la URL
+  // con una expresión regular funcionaría hasta que Cloudinary cambie el formato de sus URLs o
+  // aparezca una imagen dentro de otra carpeta.
+  publicId String @map("public_id")
+
+  url          String
+  urlThumbnail String? @map("url_thumbnail")
+  orden        Int     @default(0)
+  esPortada    Boolean @default(false) @map("es_portada")
 
   createdAt DateTime @default(now()) @map("created_at")
 
