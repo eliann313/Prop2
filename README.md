@@ -112,6 +112,32 @@ distintas: lo que dos features compartan se sube a `shared/`.
 | `npm run db:verify`         | Lista tablas, enums e índices reales de la base |
 | `npm run db:studio`         | Prisma Studio                                   |
 
+## Deploy en Vercel
+
+Importá el repo desde el dashboard de Vercel; no hace falta tocar la configuración de build.
+
+**Por qué hay un script `vercel-build` además de `build`:** el cliente de Prisma 7 se genera en
+`src/generated/` y está gitignoreado (es código generado, no fuente), así que en un checkout
+limpio no existe y `next build` solo falla con "Cannot find module". Vercel, si encuentra un
+script `vercel-build`, lo usa en lugar de `build` — y ahí es donde corren las migraciones antes
+del build, como pide 13.4. El `build` común no las corre, para que el CI pueda buildear con una
+`DATABASE_URL` dummy sin intentar migrar nada.
+
+Variables a cargar en Vercel (Settings → Environment Variables), separadas por entorno:
+
+| Variable                | Production        | Preview              |
+| ----------------------- | ----------------- | -------------------- |
+| `DATABASE_URL`          | pooled            | pooled               |
+| `DATABASE_URL_UNPOOLED` | directa           | directa              |
+| `AUTH_SECRET`           | uno propio        | uno propio, distinto |
+| `RESEND_API_KEY`        | key de producción | key de test          |
+| `UPSTASH_*`             | sí                | sí                   |
+| `AUTH_URL`              | **no cargar**     | **no cargar**        |
+
+`AUTH_URL` se omite a propósito: Auth.js la deduce del deployment. Si se fija a mano, los links
+de verificación de un preview deployment apuntarían a producción y el usuario terminaría
+confirmando su email contra la base equivocada.
+
 ## Migraciones
 
 El flujo normal es el de Prisma:
