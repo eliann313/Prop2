@@ -6,8 +6,8 @@ import { useForm } from "react-hook-form";
 
 import { registrarUsuario } from "@/features/auth/actions/registrarUsuario";
 import { schemaRegistro, type DatosRegistro } from "@/features/auth/authSchemas";
-import { AvisoDeAccion } from "@/features/auth/components/AvisoDeAccion";
-import { CampoTexto } from "@/features/auth/components/CampoTexto";
+import { AvisoDeAccion } from "@/shared/components/AvisoDeAccion";
+import { CampoTexto } from "@/shared/components/CampoTexto";
 import { Button } from "@/shared/components/ui/button";
 import type { ResultadoAccion } from "@/shared/types/resultadoAccion";
 

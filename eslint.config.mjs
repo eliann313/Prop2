@@ -65,13 +65,33 @@ const GRUPOS_DE_FEATURES = [
   ["admin"],
 ];
 
+/**
+ * Excepciones al aislamiento entre features: el kernel de identidad.
+ *
+ * "Quién está logueado" y "promover a alguien a vendedor" los necesita cualquier feature, y no
+ * pueden vivir en shared/ porque dependen del cliente de la base y de la config de Auth.js.
+ * En vez de dejar la regla sin efecto por eso, se declara una superficie pública mínima: estos
+ * dos módulos son importables desde cualquier lado, y todo el resto de auth/ y usuarios/ no.
+ *
+ * Es lo que evita que otra feature termine llamando a `actualizarRol` y pudiendo escribir
+ * `admin`: `promocionDeRol` no recibe el rol como parámetro, lo decide adentro.
+ */
+const KERNEL_DE_IDENTIDAD = [
+  "@/features/auth/sessionQueries",
+  "@/features/usuarios/promocionDeRol",
+];
+
 /** Prohíbe importar features que no estén en el grupo del archivo. */
 function importsDeOtrasFeatures(grupo) {
   const ajenas = GRUPOS_DE_FEATURES.flat().filter((f) => !grupo.includes(f));
   return {
-    group: ajenas.map((f) => `@/features/${f}/**`),
+    group: [
+      ...ajenas.map((f) => `@/features/${f}/**`),
+      // El `!` excluye del patrón anterior: estos quedan permitidos.
+      ...KERNEL_DE_IDENTIDAD.map((modulo) => `!${modulo}`),
+    ],
     message:
-      "No se importa entre features. Si dos features necesitan lo mismo, ese código se sube a shared/.",
+      "No se importa entre features. Si dos features necesitan lo mismo, ese código se sube a shared/ — o se expone como parte del kernel de identidad (ver KERNEL_DE_IDENTIDAD).",
   };
 }
 

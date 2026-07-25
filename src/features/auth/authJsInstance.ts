@@ -25,7 +25,13 @@ import { env, googleHabilitado } from "@/shared/lib/serverEnv";
  * Exporta `handlers` (los consume el Route Handler de /api/auth), `auth` (para leer la sesión
  * en el servidor), y `signIn`/`signOut` (para las Server Actions).
  */
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const {
+  handlers,
+  auth,
+  signIn,
+  signOut,
+  unstable_update: refrescarSesion,
+} = NextAuth({
   ...authJsOptions,
 
   // El adapter se usa para el flujo de OAuth (crear el usuario de Google y su fila en

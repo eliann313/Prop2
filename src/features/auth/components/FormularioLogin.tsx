@@ -11,8 +11,8 @@ import {
 } from "@/features/auth/actions/iniciarSesion";
 import { RUTAS } from "@/shared/rutas";
 import { schemaLogin, type DatosLogin } from "@/features/auth/authSchemas";
-import { AvisoDeAccion } from "@/features/auth/components/AvisoDeAccion";
-import { CampoTexto } from "@/features/auth/components/CampoTexto";
+import { AvisoDeAccion } from "@/shared/components/AvisoDeAccion";
+import { CampoTexto } from "@/shared/components/CampoTexto";
 import { esEmailSinVerificar } from "@/features/auth/erroresDeLogin";
 import { Button } from "@/shared/components/ui/button";
 

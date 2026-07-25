@@ -9,8 +9,8 @@ import {
   schemaReenviarVerificacion,
   type DatosReenviarVerificacion,
 } from "@/features/auth/authSchemas";
-import { AvisoDeAccion } from "@/features/auth/components/AvisoDeAccion";
-import { CampoTexto } from "@/features/auth/components/CampoTexto";
+import { AvisoDeAccion } from "@/shared/components/AvisoDeAccion";
+import { CampoTexto } from "@/shared/components/CampoTexto";
 import { Button } from "@/shared/components/ui/button";
 import type { ResultadoAccion } from "@/shared/types/resultadoAccion";
 

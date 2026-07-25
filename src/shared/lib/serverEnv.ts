@@ -29,6 +29,10 @@ const esquemaEnv = z.object({
   UPSTASH_REDIS_REST_URL: z.string().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
+
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 });
 
@@ -65,4 +69,13 @@ export const emailHabilitado = Boolean(env.RESEND_API_KEY && env.EMAIL_FROM);
 /** Sin credenciales de Upstash, el rate limiting queda inactivo (permite todo). */
 export const rateLimitHabilitado = Boolean(
   env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN,
+);
+
+/**
+ * Sin credenciales de Cloudinary no se pueden subir fotos. La publicación igual se puede
+ * crear y editar como borrador; lo que no se puede es pasarla a activa, porque publicar exige
+ * al menos una imagen (ver publicacionService).
+ */
+export const subidaDeImagenesHabilitada = Boolean(
+  env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET,
 );
