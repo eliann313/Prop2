@@ -1,11 +1,51 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
+# Actualizaciones automáticas de dependencias.
+#
+# El archivo que había era la plantilla que genera GitHub, con `package-ecosystem: ""` vacío:
+# se veía configurado en el repo pero Dependabot lo ignoraba y nunca abrió un PR.
 version: 2
 updates:
-  - package-ecosystem: "" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: npm
+    directory: "/"
     schedule:
-      interval: "weekly"
+      interval: weekly
+      day: monday
+    # Contra develop y no main: las dependencias entran por el mismo camino que cualquier
+    # cambio (10.2), no directo a producción.
+    target-branch: develop
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    # Sin agrupar, un lunes cualquiera aparecen 15 PRs de un parche cada uno y el equipo
+    # deja de revisarlos. Agrupados son 2 PRs con contexto suficiente para decidir.
+    groups:
+      produccion:
+        dependency-type: production
+        update-types: [minor, patch]
+      desarrollo:
+        dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      # Next y React se actualizan a mano: un major de cualquiera de los dos es una migración
+      # con breaking changes (lo que se vio al pasar a Next 16), no algo para mergear desde un
+      # PR automático.
+      - dependency-name: next
+        update-types: [version-update:semver-major]
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+      # next-auth está en beta: cada release puede cambiar la API sin aviso.
+      - dependency-name: next-auth
+
+  # Las actions también se versionan y también acumulan vulnerabilidades.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    target-branch: develop
+    commit-message:
+      prefix: chore
+    groups:
+      actions:
+        patterns: ["*"]
