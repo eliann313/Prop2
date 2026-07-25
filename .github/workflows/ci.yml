@@ -1,0 +1,64 @@
+name: CI
+
+# Corre en PRs hacia develop y main, y en los push directos a esas ramas (13.6).
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+# Si se pushea de nuevo a la misma rama mientras el pipeline corre, se cancela el anterior:
+# no tiene sentido gastar minutos validando un commit que ya quedó viejo.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Mínimo privilegio para el GITHUB_TOKEN. Sin este bloque hereda los permisos por defecto del
+# repositorio, que suelen incluir ESCRITURA: una dependencia comprometida en cualquiera de los
+# pasos de npm tendría, gratis, un token capaz de pushear a este repo. Este pipeline solo lee
+# el código, así que con `contents: read` alcanza.
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: Lint, tipos, tests y build
+    runs-on: ubuntu-latest
+
+    env:
+      # El build necesita que las variables existan y sean válidas (serverEnv.ts las valida al
+      # importarse), pero NO se conecta a la base: `next build` no ejecuta queries en este
+      # proyecto. Por eso alcanzan valores dummy y el CI no necesita el secreto real de Neon —
+      # una credencial menos expuesta en el pipeline.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      AUTH_SECRET: valor-dummy-solo-para-que-el-build-de-ci-valide-el-entorno
+      # Fuerza el mismo comportamiento de resolución de peers que en local (ver .npmrc).
+      NPM_CONFIG_LEGACY_PEER_DEPS: "true"
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # El cliente de Prisma es código generado y está gitignoreado: sin este paso, el
+      # type-check falla porque no existe @/generated/prisma.
+      - name: Generar cliente de Prisma
+        run: npm run db:generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run type-check
+
+      - name: Tests unitarios
+        run: npm test
+
+      - name: Build
+        run: npm run build

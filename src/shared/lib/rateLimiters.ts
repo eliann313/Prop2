@@ -1,0 +1,84 @@
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+import { rateLimitHabilitado, env } from "@/shared/lib/serverEnv";
+
+// Rate limiting de los endpoints sensibles de auth (8.4). Vive en shared/lib porque es
+// infraestructura y lo van a usar varias features (auth ahora, contacto e IA más adelante).
+
+const redis = rateLimitHabilitado
+  ? new Redis({
+      url: env.UPSTASH_REDIS_REST_URL!,
+      token: env.UPSTASH_REDIS_REST_TOKEN!,
+    })
+  : null;
+
+function crearLimitador(
+  nombre: string,
+  intentos: number,
+  ventana: `${number} ${"s" | "m" | "h"}`,
+) {
+  if (!redis) return null;
+  return new Ratelimit({
+    redis,
+    // Sliding window y no fixed window: con ventana fija, un atacante que manda el cupo al
+    // final de una ventana y al principio de la siguiente duplica los intentos efectivos.
+    limiter: Ratelimit.slidingWindow(intentos, ventana),
+    prefix: `ratelimit:${nombre}`,
+    analytics: false,
+  });
+}
+
+const limitadores = {
+  // El más ajustado: es el que frena fuerza bruta y credential stuffing.
+  login: crearLimitador("login", 5, "1 m"),
+  registro: crearLimitador("registro", 3, "10 m"),
+  // Reenvío de verificación y reseteo mandan emails: el límite protege la cuota de Resend
+  // además de la cuenta del usuario.
+  emailTransaccional: crearLimitador("email-transaccional", 3, "15 m"),
+} as const;
+
+export type NombreLimitador = keyof typeof limitadores;
+
+export type ResultadoRateLimit = {
+  permitido: boolean;
+  /** Segundos hasta que se libere un intento. 0 cuando está permitido. */
+  reintentarEnSegundos: number;
+};
+
+/**
+ * Consume un intento del limitador indicado.
+ *
+ * Si Upstash no está configurado devuelve `permitido: true`: en desarrollo se prioriza poder
+ * correr la app sin dar de alta el servicio. En producción las variables SÍ tienen que estar
+ * — el arranque lo advierte por consola (ver más abajo) y la tarjeta de Etapa 5 lo cubre
+ * como requisito de release.
+ */
+export async function consumirIntento(
+  nombre: NombreLimitador,
+  identificador: string,
+): Promise<ResultadoRateLimit> {
+  const limitador = limitadores[nombre];
+  if (!limitador) return { permitido: true, reintentarEnSegundos: 0 };
+
+  const { success, reset } = await limitador.limit(identificador);
+  return {
+    permitido: success,
+    reintentarEnSegundos: success
+      ? 0
+      : Math.max(1, Math.ceil((reset - Date.now()) / 1000)),
+  };
+}
+
+// El aviso importa en el servidor corriendo, no durante `next build`: en el build no hay
+// requests que limitar, y además el mensaje se repetiría una vez por worker de compilación.
+if (
+  !rateLimitHabilitado &&
+  env.NODE_ENV === "production" &&
+  process.env.NEXT_PHASE !== "phase-production-build"
+) {
+  console.warn(
+    "UPSTASH_REDIS_REST_URL/TOKEN no están configuradas en producción: " +
+      "el rate limiting de login, registro y emails está INACTIVO.",
+  );
+}
