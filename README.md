@@ -135,7 +135,11 @@ Variables a cargar en Vercel (Settings → Environment Variables), separadas por
 | `RESEND_API_KEY`        | key de producción | key de test          |
 | `UPSTASH_*`             | sí                | sí                   |
 | `CLOUDINARY_*`          | las tres          | las tres             |
+| `CRON_SECRET`           | sí                | no hace falta        |
 | `AUTH_URL`              | **no cargar**     | **no cargar**        |
+
+`CRON_SECRET` solo hace falta en Production: los crons de Vercel no se disparan en preview
+deployments.
 
 Las variables tienen que estar cargadas **antes** del primer deploy: `vercel-build` corre
 `prisma migrate deploy` y la validación de entorno de `serverEnv.ts` falla el build si falta
@@ -168,6 +172,34 @@ cualquiera puede copiar del bundle del navegador para subir archivos a la cuenta
 La primera imagen del arreglo es la portada, y `es_portada` se deriva de la posición al guardar.
 Con un booleano por imagen se puede llegar a cero portadas o a dos; derivándola del orden, ese
 estado inválido no existe.
+
+### Limpieza de imágenes huérfanas
+
+Como las fotos se suben **antes** de que exista la publicación, quien abandona el wizard a mitad
+de camino deja archivos sin ninguna fila que los referencie. Un cron diario los borra.
+
+- **Cuándo:** `0 6 * * *` (3 AM en Argentina), declarado en [`vercel.json`](vercel.json). El
+  plan Hobby de Vercel permite un disparo por día, que para esto sobra.
+- **Endpoint:** `/api/cron/limpiar-imagenes-huerfanas`, protegido con `CRON_SECRET`. Sin la
+  variable configurada **rechaza todo**, también en local: la alternativa —dejar pasar cuando no
+  hay secreto "porque en desarrollo es cómodo"— publica un endpoint que borra archivos en cuanto
+  alguien despliega sin configurarlo.
+- **Período de gracia de 24 h:** solo se borra lo que lleva más de un día sin referencia. Sin
+  ese margen, el cron le borraría las fotos a alguien que está completando el wizard.
+- **Tope de 100 por corrida:** no es una optimización, es contención de daño. El modo de falla
+  que importa es que la lista de referencias venga vacía por un bug — ahí _todo_ parecería
+  huérfano. Con el tope, el peor caso de un día son 100 archivos y un warning en los logs, en
+  vez de la cuenta entera.
+
+Antes de confiar en él, conviene correrlo en seco:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://TU-DOMINIO/api/cron/limpiar-imagenes-huerfanas?simular=1"
+```
+
+Devuelve el mismo resumen que la corrida real (cuántos assets hay, cuántos están referenciados,
+cuántos están en gracia y cuántos borraría) sin borrar nada.
 
 ## Migraciones
 
@@ -234,10 +266,9 @@ invalida los anteriores del mismo tipo.
   desarrollo local, pero es un requisito de release, no opcional en producción.
 - **Sin índice full-text.** El índice GIN sobre `titulo` + `descripcion` necesita SQL crudo
   (`tsvector`) y se agrega en la Etapa 3, junto con las queries de búsqueda que lo justifican.
-- **Imágenes huérfanas en Cloudinary.** Si alguien sube fotos en el wizard y abandona antes de
-  guardar, los archivos quedan en la cuenta sin ninguna publicación que los referencie. La
-  limpieza periódica está documentada como tarea manual (13.3); automatizarla es un cron de
-  Vercel que compara `public_id` contra la tabla `imagen_publicacion`.
+- **La limpieza de huérfanas solo corre en producción.** Los crons de Vercel no se disparan en
+  preview deployments, así que las fotos abandonadas en un preview quedan hasta que el cron de
+  producción las alcance — comparten la misma cuenta de Cloudinary, así que igual las junta.
 - **`legacy-peer-deps=true` en `.npmrc`.** Es un conflicto entre peers opcionales de
   `@hookform/resolvers` y `@typeschema/valibot` que no involucra ningún paquete que el proyecto
   importe. Se puede quitar cuando upstream lo resuelva.

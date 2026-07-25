@@ -281,6 +281,21 @@ export async function cambiarEstado(
   return count === 1;
 }
 
+/**
+ * Todos los public_id referenciados por alguna publicación, sin importar su estado.
+ *
+ * Incluye a propósito las publicaciones `eliminada`: el soft delete conserva la fila para no
+ * romper las referencias de Favorito y MensajeContacto (3.4), así que sus imágenes siguen
+ * siendo parte de un registro vivo. Filtrarlas acá haría que el cron borre las fotos de una
+ * publicación que un admin todavía puede necesitar moderar.
+ */
+export async function obtenerPublicIdsReferenciados(): Promise<string[]> {
+  const filas = await prisma.imagenPublicacion.findMany({
+    select: { publicId: true },
+  });
+  return filas.map((fila) => fila.publicId);
+}
+
 export function listarCaracteristicas() {
   return prisma.caracteristica.findMany({
     orderBy: [{ categoria: "asc" }, { nombre: "asc" }],

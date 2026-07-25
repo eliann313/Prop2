@@ -33,6 +33,10 @@ const esquemaEnv = z.object({
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
 
+  // Autoriza los endpoints de /api/cron. Vercel la inyecta sola en producción si se declara
+  // en el proyecto; en local se pone a mano para poder probar el endpoint.
+  CRON_SECRET: z.string().optional(),
+
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 });
 

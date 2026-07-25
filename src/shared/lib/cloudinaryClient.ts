@@ -66,8 +66,8 @@ export function firmarSubida(): FirmaDeSubida {
  * Borra una imagen de Cloudinary.
  *
  * No lanza si falla: que quede un archivo huérfano en Cloudinary es molesto, pero mucho menos
- * grave que dejar en la base la referencia a una imagen que el usuario ya quitó. La limpieza
- * de huérfanos está documentada como tarea manual periódica (13.3).
+ * grave que dejar en la base la referencia a una imagen que el usuario ya quitó. De los
+ * huérfanos se ocupa el cron de limpieza.
  */
 export async function borrarImagen(publicId: string): Promise<void> {
   if (!subidaDeImagenesHabilitada) return;
@@ -77,6 +77,65 @@ export async function borrarImagen(publicId: string): Promise<void> {
   } catch (error) {
     console.error(`No se pudo borrar ${publicId} de Cloudinary:`, error);
   }
+}
+
+export type AssetEnCloudinary = {
+  publicId: string;
+  creadoEn: Date;
+};
+
+/** Tope de páginas a recorrer, como red de seguridad ante un cursor que no avanza. */
+const MAX_PAGINAS = 20;
+const POR_PAGINA = 500;
+
+/**
+ * Lista todos los assets subidos a la carpeta de publicaciones.
+ *
+ * Pagina con `next_cursor` porque la Admin API devuelve como mucho 500 por request y una cuenta
+ * con varias publicaciones supera eso rápido. Sin paginar, la limpieza vería solo las primeras
+ * 500 y consideraría "no huérfano" a todo lo demás por no haberlo mirado — o peor, al revés.
+ *
+ * Ojo con el consumo: la Admin API tiene un límite propio (bastante más bajo que el de subida),
+ * y por eso esto lo llama un cron diario y no una request de usuario.
+ */
+export async function listarImagenesSubidas(): Promise<AssetEnCloudinary[]> {
+  if (!subidaDeImagenesHabilitada) return [];
+
+  const assets: AssetEnCloudinary[] = [];
+  let cursor: string | undefined;
+  let paginas = 0;
+
+  do {
+    const respuesta = await cloudinary.api.resources({
+      type: "upload",
+      prefix: CARPETA,
+      max_results: POR_PAGINA,
+      next_cursor: cursor,
+    });
+
+    for (const recurso of respuesta.resources as {
+      public_id: string;
+      created_at: string;
+    }[]) {
+      assets.push({
+        publicId: recurso.public_id,
+        creadoEn: new Date(recurso.created_at),
+      });
+    }
+
+    cursor = respuesta.next_cursor as string | undefined;
+    paginas++;
+  } while (cursor && paginas < MAX_PAGINAS);
+
+  if (cursor) {
+    // Se avisa en vez de seguir en silencio: si la cuenta creció más allá de lo previsto, la
+    // limpieza está viendo una foto parcial de la realidad y conviene saberlo.
+    console.warn(
+      `Se alcanzó el tope de ${MAX_PAGINAS} páginas listando Cloudinary; quedaron assets sin revisar.`,
+    );
+  }
+
+  return assets;
 }
 
 /**
