@@ -13,6 +13,13 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Mínimo privilegio para el GITHUB_TOKEN. Sin este bloque hereda los permisos por defecto del
+# repositorio, que suelen incluir ESCRITURA: una dependencia comprometida en cualquiera de los
+# pasos de npm tendría, gratis, un token capaz de pushear a este repo. Este pipeline solo lee
+# el código, así que con `contents: read` alcanza.
+permissions:
+  contents: read
+
 jobs:
   verificar:
     name: Lint, tipos, tests y build
