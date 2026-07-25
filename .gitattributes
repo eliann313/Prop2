@@ -1,0 +1,18 @@
+# Normaliza los saltos de línea a LF en el repositorio, sin importar el sistema operativo de
+# quien commitea. Sin esto, en un equipo con alguien en Windows y alguien en Linux/macOS cada
+# archivo que se toca aparece como "modificado por completo" en el diff, y los code reviews se
+# vuelven ilegibles.
+* text=auto eol=lf
+
+# Binarios: nunca convertir.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# El lockfile es generado: colapsarlo en los diffs de los PRs para no revisar miles de líneas.
+package-lock.json linguist-generated=true diff=none

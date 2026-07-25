@@ -1,0 +1,4 @@
+# Type-check y tests unitarios antes de pushear (14.1). La suite de integración y los E2E
+# quedan para CI: acá el objetivo es cortar rápido, no correr todo.
+npm run type-check
+npm test

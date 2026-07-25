@@ -1,0 +1,10 @@
+.next
+node_modules
+# Código generado por Prisma: se regenera en cada `prisma generate`, formatearlo no aporta.
+src/generated
+prisma/migrations
+package-lock.json
+# Workflows que genera GitHub (CodeQL, Dependabot): reformatearlos solo agrega ruido al diff
+# cada vez que GitHub los actualiza desde su plantilla.
+.github/workflows/codeql.yml
+.github/dependabot.yml

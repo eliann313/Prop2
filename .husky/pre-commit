@@ -1,0 +1,3 @@
+# Solo los archivos que entran en el commit, no el repo entero: un commit chico no tiene por
+# qué esperar el lint completo (14.1).
+npx lint-staged
