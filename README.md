@@ -7,8 +7,9 @@ Proyecto de portfolio. La documentación de arquitectura completa (16 secciones:
 modelo de datos, flujos, seguridad, SEO, roadmap por etapas, testing, DevOps) vive en Notion;
 este README cubre solo cómo levantar y trabajar el repo.
 
-**Estado: Etapas 0 y 1 completas** — infraestructura, modelo de datos y autenticación
-end-to-end. El CRUD de publicaciones es Etapa 2 y la búsqueda Etapa 3.
+**Estado: Etapas 0, 1 y 2 completas** — infraestructura, modelo de datos, autenticación
+end-to-end y CRUD de publicaciones con wizard, geocoding y fotos. La búsqueda pública es
+Etapa 3.
 
 ## Stack
 
@@ -133,7 +134,13 @@ Variables a cargar en Vercel (Settings → Environment Variables), separadas por
 | `AUTH_SECRET`           | uno propio        | uno propio, distinto |
 | `RESEND_API_KEY`        | key de producción | key de test          |
 | `UPSTASH_*`             | sí                | sí                   |
+| `CLOUDINARY_*`          | las tres          | las tres             |
 | `AUTH_URL`              | **no cargar**     | **no cargar**        |
+
+Las variables tienen que estar cargadas **antes** del primer deploy: `vercel-build` corre
+`prisma migrate deploy` y la validación de entorno de `serverEnv.ts` falla el build si falta
+`DATABASE_URL` o `AUTH_SECRET`. Es a propósito — es preferible un build que falla a una app
+desplegada que explota en la primera request.
 
 `AUTH_URL` se omite a propósito: Auth.js la deduce del deployment. Si se fija a mano, los links
 de verificación de un preview deployment apuntarían a producción y el usuario terminaría
