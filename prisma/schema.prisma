@@ -1,0 +1,381 @@
+// Modelo de datos — ver sección 3 del Documento de Arquitectura.
+//
+// Convención de nombres: los modelos y campos del dominio van en español (es el lenguaje
+// del negocio: publicaciones, expensas, barrio). Las excepciones son User/Account/Session/
+// VerificationToken y sus campos: el PrismaAdapter de Auth.js accede a esos nombres de forma
+// literal (`prisma.user.create({ data: { emailVerified, image, ... } })`), así que renombrarlos
+// obligaría a escribir un adapter propio — más código de auth hecho a mano, que es justamente
+// el riesgo que la sección 2.5 quiere evitar. Los nombres de tabla/columna en la base sí
+// quedan en snake_case vía @map/@@map.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Usuarios y autenticación
+// ---------------------------------------------------------------------------
+
+enum Rol {
+  comprador
+  vendedor
+  admin
+
+  @@map("rol")
+}
+
+enum EstadoUsuario {
+  activo
+  baneado
+
+  @@map("estado_usuario")
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Campos que el PrismaAdapter de Auth.js escribe/lee por nombre exacto.
+  name          String?
+  email         String    @unique
+  // Auth.js modela la verificación como "cuándo se verificó", no como un booleano.
+  // Se respeta ese contrato en vez del Boolean de 3.1: guarda la misma información y
+  // además deja el timestamp para auditoría, sin costo extra.
+  emailVerified DateTime? @map("email_verificado_en")
+  image         String?   @map("avatar_url")
+
+  // Campos propios del dominio.
+  // Null cuando el usuario se registró solo vía Google OAuth (3.1).
+  passwordHash String?       @map("password_hash")
+  telefono     String?
+  rol          Rol           @default(comprador)
+  estado       EstadoUsuario @default(activo)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  accounts           Account[]
+  sessions           Session[]
+  tokensVerificacion TokenVerificacion[]
+  publicaciones      Publicacion[]
+  favoritos          Favorito[]
+  mensajesEnviados   MensajeContacto[]
+
+  @@map("usuario")
+}
+
+model Account {
+  userId            String  @map("usuario_id") @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+  @@index([userId])
+  @@map("cuenta_oauth")
+}
+
+// La estrategia de sesión es JWT (obligatorio al usar el Credentials provider de Auth.js),
+// así que esta tabla no se escribe en el flujo actual. Se declara igual porque el
+// PrismaAdapter la exige a nivel de tipos, y deja la puerta abierta a migrar a sesiones
+// en base de datos sin una migración de schema.
+model Session {
+  sessionToken String   @id @map("session_token")
+  userId       String   @map("usuario_id") @db.Uuid
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sesion")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@id([identifier, token])
+  @@map("token_verificacion_authjs")
+}
+
+enum TipoToken {
+  verificacion_email
+  recuperacion_password
+
+  @@map("tipo_token")
+}
+
+// Tokens de los flujos propios de 5.1 (verificar email tras registro por credenciales y
+// resetear contraseña). Es una tabla distinta de VerificationToken porque esa la maneja
+// Auth.js para sus propios flujos y no distingue el tipo de token.
+model TokenVerificacion {
+  id        String @id @default(uuid()) @db.Uuid
+  usuarioId String @map("usuario_id") @db.Uuid
+
+  // Se guarda el SHA-256 del token, no el token en claro: quien lea la base (un dump, un
+  // backup, un IDOR) no puede usar los tokens para tomar cuentas ajenas. Mismo criterio con
+  // el que se hashea la contraseña. El token en claro solo existe en el link del email.
+  tokenHash String    @unique @map("token_hash")
+  tipo      TipoToken
+  expiraEn  DateTime  @map("expira_en")
+  usadoEn   DateTime? @map("usado_en")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, tipo])
+  @@map("token_verificacion")
+}
+
+// ---------------------------------------------------------------------------
+// Publicaciones (CRUD en Etapa 2 — el schema se migra completo en Etapa 1)
+// ---------------------------------------------------------------------------
+
+enum TipoInmueble {
+  casa
+  departamento
+  ph
+  terreno
+  local
+  oficina
+  galpon
+  cochera
+  quinta
+  campo
+
+  @@map("tipo_inmueble")
+}
+
+enum Operacion {
+  venta
+  alquiler
+
+  @@map("operacion")
+}
+
+enum Moneda {
+  ARS
+  USD
+
+  @@map("moneda")
+}
+
+enum Orientacion {
+  norte
+  sur
+  este
+  oeste
+  noreste
+  noroeste
+  sureste
+  suroeste
+
+  @@map("orientacion")
+}
+
+enum EstadoPublicacion {
+  borrador
+  activa
+  pausada
+  eliminada
+
+  @@map("estado_publicacion")
+}
+
+enum EstadoInmueble {
+  a_estrenar
+  excelente
+  muy_bueno
+  bueno
+  a_refaccionar
+
+  @@map("estado_inmueble")
+}
+
+model Publicacion {
+  id        String @id @default(uuid()) @db.Uuid
+  usuarioId String @map("usuario_id") @db.Uuid
+
+  titulo      String
+  descripcion String
+
+  tipoInmueble TipoInmueble @map("tipo_inmueble")
+  operacion    Operacion
+
+  // Decimal, nunca Float: un redondeo binario en un monto de venta es un bug de dominio (3.1).
+  precio Decimal @db.Decimal(14, 2)
+  moneda Moneda
+
+  provincia String
+  ciudad    String
+  // Nullable y clave para CABA/GBA, donde el barrio pesa más que la ciudad (3.1).
+  barrio       String?
+  codigoPostal String? @map("codigo_postal")
+  // Mostrar la calle exacta en el detalle público queda a criterio del propietario (3.4).
+  direccion    String?
+
+  // Siempre presentes: se geocodifican con Nominatim al crear/editar (2.9).
+  latitud  Decimal @db.Decimal(10, 7)
+  longitud Decimal @db.Decimal(10, 7)
+
+  superficieCubierta Decimal? @map("superficie_cubierta") @db.Decimal(10, 2)
+  superficieTotal    Decimal? @map("superficie_total") @db.Decimal(10, 2)
+
+  ambientes   Int?
+  dormitorios Int?
+  banios      Int?
+  // Solo aplica a departamentos/oficinas.
+  piso        Int?
+
+  orientacion Orientacion?
+  // Distinto de tipoInmueble = cochera, que es cuando el inmueble publicado ES una cochera (3.1).
+  tieneCochera    Boolean @default(false) @map("tiene_cochera")
+  antiguedadAnios Int?    @map("antiguedad_anios")
+
+  // Siempre en ARS, incluso en propiedades publicadas en USD: así se factura en la práctica
+  // en Argentina (3.4). Nullable porque una casa o un terreno normalmente no tienen expensas.
+  expensas Decimal? @db.Decimal(14, 2)
+
+  videoUrl String? @map("video_url")
+
+  estadoPublicacion EstadoPublicacion @default(borrador) @map("estado_publicacion")
+  estadoInmueble    EstadoInmueble?   @map("estado_inmueble")
+
+  vistas Int @default(0)
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  publishedAt DateTime? @map("published_at")
+
+  usuario         User                        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  imagenes        ImagenPublicacion[]
+  caracteristicas PublicacionCaracteristica[]
+  favoritos       Favorito[]
+  mensajes        MensajeContacto[]
+
+  // Índices de 3.3: los filtros combinados más usados de la búsqueda.
+  // El índice GIN de full-text sobre titulo+descripcion se agrega en la Etapa 3, junto con
+  // la feature de búsqueda: necesita SQL crudo (tsvector) y no tiene sentido migrarlo antes
+  // de tener las queries que lo justifican.
+  @@index([usuarioId])
+  @@index([provincia, ciudad])
+  @@index([tipoInmueble, operacion])
+  @@index([precio])
+  @@index([estadoPublicacion])
+  @@index([latitud, longitud])
+  @@map("publicacion")
+}
+
+// Tabla aparte en vez de un array/JSON dentro de Publicacion: permite orden, portada y
+// borrado individual sin reescribir la publicación entera (3.4).
+model ImagenPublicacion {
+  id            String  @id @default(uuid()) @db.Uuid
+  publicacionId String  @map("publicacion_id") @db.Uuid
+  url           String
+  urlThumbnail  String? @map("url_thumbnail")
+  orden         Int     @default(0)
+  esPortada     Boolean @default(false) @map("es_portada")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  publicacion Publicacion @relation(fields: [publicacionId], references: [id], onDelete: Cascade)
+
+  @@index([publicacionId, orden])
+  @@map("imagen_publicacion")
+}
+
+enum CategoriaCaracteristica {
+  servicio
+  comodidad
+
+  @@map("categoria_caracteristica")
+}
+
+// Catálogo + tabla intermedia N–M en vez de columnas booleanas: agregar "apto crédito" no
+// requiere migración de schema, y deja preparados los filtros combinables de V1.1 (3.4).
+model Caracteristica {
+  id        String                  @id @default(uuid()) @db.Uuid
+  nombre    String                  @unique
+  slug      String                  @unique
+  categoria CategoriaCaracteristica
+
+  publicaciones PublicacionCaracteristica[]
+
+  @@map("caracteristica")
+}
+
+model PublicacionCaracteristica {
+  publicacionId    String @map("publicacion_id") @db.Uuid
+  caracteristicaId String @map("caracteristica_id") @db.Uuid
+
+  publicacion    Publicacion    @relation(fields: [publicacionId], references: [id], onDelete: Cascade)
+  caracteristica Caracteristica @relation(fields: [caracteristicaId], references: [id], onDelete: Cascade)
+
+  @@id([publicacionId, caracteristicaId])
+  @@index([caracteristicaId])
+  @@map("publicacion_caracteristica")
+}
+
+model Favorito {
+  id            String @id @default(uuid()) @db.Uuid
+  usuarioId     String @map("usuario_id") @db.Uuid
+  publicacionId String @map("publicacion_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  usuario     User        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  publicacion Publicacion @relation(fields: [publicacionId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, publicacionId])
+  @@index([publicacionId])
+  @@map("favorito")
+}
+
+enum MedioContacto {
+  whatsapp
+  formulario
+  email
+
+  @@map("medio_contacto")
+}
+
+model MensajeContacto {
+  id            String  @id @default(uuid()) @db.Uuid
+  publicacionId String  @map("publicacion_id") @db.Uuid
+  // Nullable: pedir cuenta para consultar por un inmueble agrega fricción real al
+  // comprador, así que los datos de contacto se capturan a mano si no hay sesión (3.4).
+  usuarioId     String? @map("usuario_id") @db.Uuid
+
+  nombreContacto   String        @map("nombre_contacto")
+  emailContacto    String        @map("email_contacto")
+  telefonoContacto String?       @map("telefono_contacto")
+  mensaje          String
+  medioContacto    MedioContacto @map("medio_contacto")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  publicacion Publicacion @relation(fields: [publicacionId], references: [id], onDelete: Cascade)
+  usuario     User?       @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([publicacionId])
+  @@index([usuarioId])
+  @@map("mensaje_contacto")
+}
