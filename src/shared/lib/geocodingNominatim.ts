@@ -15,8 +15,7 @@ const ENDPOINT = "https://nominatim.openstreetmap.org/search";
  * Va "Prop2" y no "Prop²": los valores de header HTTP son ASCII/latin-1, y `undici` rechaza
  * un caracter fuera de ese rango antes de que el pedido salga.
  */
-const USER_AGENT =
-  "Prop2/0.1 (portfolio; https://github.com/eliann313/ProyectoInmuebles)";
+const USER_AGENT = "Prop2/0.1 (portfolio; https://github.com/eliann313/Prop2)";
 
 /**
  * Nominatim admite 1 request por segundo. Se serializan los pedidos encadenándolos en una

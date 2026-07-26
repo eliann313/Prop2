@@ -85,7 +85,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Revisar dependencias nuevas
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
         with:
           # Falla solo con vulnerabilidades altas o críticas que ENTREN en este PR. Las que ya
           # están en el repo son deuda conocida (ver README) y no tienen por qué bloquear un
