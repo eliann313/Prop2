@@ -21,7 +21,7 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/labeler@v5
+      - uses: actions/labeler@v7
         with:
           configuration-path: .github/labeler.yml
           # Sin esto, una etiqueta puesta a mano se borra en cuanto el PR recibe otro push.
