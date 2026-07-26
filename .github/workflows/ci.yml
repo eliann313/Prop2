@@ -54,6 +54,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # El hook de pre-commit ya formatea lo que se commitea, pero solo en la máquina de quien
+      # tenga husky instalado: un commit desde la web de GitHub o con --no-verify se saltea el
+      # hook y el formato se desincroniza sin que nadie se entere.
+      - name: Formato
+        run: npm run format:check
+
       - name: Type-check
         run: npm run type-check
 
@@ -62,3 +68,27 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  # Job aparte y no un paso más del anterior: no depende de instalar nada y su resultado se lee
+  # solo, sin bucear en el log de un job que hace otras cinco cosas.
+  dependencias:
+    name: Revisión de dependencias
+    runs-on: ubuntu-latest
+    # La action compara la rama contra su base: fuera de un PR no tiene con qué comparar.
+    if: github.event_name == 'pull_request'
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Revisar dependencias nuevas
+        uses: actions/dependency-review-action@v4
+        with:
+          # Falla solo con vulnerabilidades altas o críticas que ENTREN en este PR. Las que ya
+          # están en el repo son deuda conocida (ver README) y no tienen por qué bloquear un
+          # cambio que no las toca.
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure

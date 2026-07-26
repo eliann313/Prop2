@@ -1,0 +1,28 @@
+name: Etiquetas
+
+# Etiqueta cada PR según los archivos que toca. Las reglas están en .github/labeler.yml.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: etiquetas-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  etiquetar:
+    name: Etiquetar por archivos tocados
+    runs-on: ubuntu-latest
+
+    # `pull-requests: write` es el permiso mínimo que necesita: escribe etiquetas, nada más.
+    # No hace checkout del código del PR, así que no ejecuta nada de lo que el PR trae.
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/labeler@v5
+        with:
+          configuration-path: .github/labeler.yml
+          # Sin esto, una etiqueta puesta a mano se borra en cuanto el PR recibe otro push.
+          sync-labels: false

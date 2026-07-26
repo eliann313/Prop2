@@ -1,0 +1,80 @@
+# Etiquetas que se aplican solas según qué archivos toca el PR (actions/labeler v5).
+#
+# El criterio es "qué hay que mirar al revisar esto", no "qué carpeta cambió": por eso una
+# migración lleva su propia etiqueta aunque viva bajo prisma/, y cualquier cambio en la capa de
+# dominio lleva `dominio` aunque además toque UI. Un PR puede llevar varias.
+
+"area: auth":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/features/auth/**"
+          - "src/app/(auth)/**"
+          - "src/proxy.ts"
+
+"area: publicaciones":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/features/publicaciones/**"
+          - "src/app/(vendedor)/**"
+
+"area: usuarios":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/features/usuarios/**"
+          - "src/app/(admin)/**"
+
+"area: busqueda":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/features/busqueda/**"
+          - "src/app/(public)/**"
+
+"area: ui":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/shared/components/**"
+          - "src/app/**/*.css"
+          - "components.json"
+
+# Las migraciones son lo único del repo que no se puede revertir con un `git revert`: se
+# etiquetan aparte para que salten a la vista en la lista de PRs.
+"base de datos":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "prisma/**"
+
+"dominio":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/features/*/services/**"
+
+"tests":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "tests/**"
+          - "vitest.config.mts"
+
+# Todo lo que cambia cómo se construye, se valida o se despliega el proyecto.
+"infra":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - "scripts/**"
+          - "*.config.{ts,mts,mjs}"
+          - "next.config.ts"
+          - "vercel.json"
+          - "tsconfig.json"
+          - ".husky/**"
+
+"dependencias":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "package.json"
+          - "package-lock.json"
+          - ".npmrc"
+
+# Solo si el PR no toca nada más que documentación: sirve para saltearse la revisión profunda.
+"documentación":
+  - changed-files:
+      - all-globs-to-all-files:
+          - "**/*.md"
