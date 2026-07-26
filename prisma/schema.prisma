@@ -261,6 +261,15 @@ model Publicacion {
 
   vistas Int @default(0)
 
+  // Vector de búsqueda full-text. Lo mantiene Postgres —es una columna GENERATED ALWAYS—, no
+  // la aplicación: no hay forma de que quede desactualizado respecto del título y la
+  // descripción. Prisma no sabe expresar ni tsvector ni columnas generadas, así que se declara
+  // como Unsupported con un único propósito: que `prisma migrate` sepa que la columna existe y
+  // no proponga borrarla. Va opcional para que no aparezca en los tipos de create/update —
+  // escribirla es imposible por diseño, la rechaza Postgres.
+  // La crea prisma/migrations/20260725211500_busqueda_full_text_publicacion.
+  busqueda Unsupported("tsvector")?
+
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   publishedAt DateTime? @map("published_at")
@@ -272,15 +281,15 @@ model Publicacion {
   mensajes        MensajeContacto[]
 
   // Índices de 3.3: los filtros combinados más usados de la búsqueda.
-  // El índice GIN de full-text sobre titulo+descripcion se agrega en la Etapa 3, junto con
-  // la feature de búsqueda: necesita SQL crudo (tsvector) y no tiene sentido migrarlo antes
-  // de tener las queries que lo justifican.
   @@index([usuarioId])
   @@index([provincia, ciudad])
   @@index([tipoInmueble, operacion])
   @@index([precio])
   @@index([estadoPublicacion])
   @@index([latitud, longitud])
+  // El GIN sobre `busqueda` es lo que sostiene el buscador de texto. El operator class va
+  // explícito porque sobre un campo Unsupported Prisma no puede deducirlo.
+  @@index([busqueda(ops: raw("tsvector_ops"))], type: Gin, map: "publicacion_busqueda_idx")
   @@map("publicacion")
 }
 

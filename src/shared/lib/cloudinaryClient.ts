@@ -21,7 +21,14 @@ if (subidaDeImagenesHabilitada) {
   });
 }
 
-/** Carpeta donde se agrupan las imágenes de publicaciones dentro de la cuenta. */
+/**
+ * Carpeta donde se agrupan las imágenes de publicaciones dentro de la cuenta.
+ *
+ * Conserva el nombre viejo del proyecto a propósito: renombrarla no mueve los archivos ya
+ * subidos, y el cron de huérfanas barre por este prefijo. Las fotos que quedaran fuera del
+ * prefijo nuevo se verían como no referenciadas y se borrarían. Migrar la carpeta es un
+ * `rename` masivo en Cloudinary más el cambio de las URLs guardadas, no una constante.
+ */
 const CARPETA = "proyecto-inmuebles/publicaciones";
 
 export type FirmaDeSubida = {

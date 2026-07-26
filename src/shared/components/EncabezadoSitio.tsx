@@ -16,7 +16,7 @@ export async function EncabezadoSitio() {
     <header className="border-b">
       <nav className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
         <Link href={RUTAS.home} className="font-semibold">
-          ProyectoInmuebles
+          Prop²
         </Link>
 
         <div className="flex items-center gap-2">

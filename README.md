@@ -1,4 +1,4 @@
-# ProyectoInmuebles
+# Prop²
 
 Plataforma de publicación, venta y alquiler de inmuebles en Argentina: los propietarios
 publican directamente y los interesados contactan sin intermediarios.
@@ -26,6 +26,34 @@ Etapa 3.
 | Rate limiting | Upstash Redis + Ratelimit                          |
 | Tests         | Vitest + React Testing Library                     |
 | Deploy        | Vercel (Hobby)                                     |
+
+### Por qué `typescript` apunta a otro paquete
+
+En `package.json` hay dos entradas que a primera vista parecen un error:
+
+```json
+"@typescript/native": "npm:typescript@^7.0.2",
+"typescript": "npm:@typescript/typescript6@^6.0.2"
+```
+
+TypeScript 7 es el compilador reescrito en Go, y **no trae API programática** — llega recién en
+la 7.1. Todo lo que consume esa API (typescript-eslint, y por lo tanto `eslint-config-next`)
+revienta al arrancar si lo único instalado es la 7:
+
+```
+typescript-eslint does not support TS 7.0.
+```
+
+La solución oficial es correr las dos versiones al mismo tiempo, con los alias de arriba. El
+resultado es que `tsc` es el compilador nativo y `tsc6` el de JavaScript:
+
+| Comando | Versión | Quién lo usa                                   |
+| ------- | ------- | ---------------------------------------------- |
+| `tsc`   | 7.0.2   | `npm run type-check`                           |
+| `tsc6`  | 6.0.3   | typescript-eslint, vía el paquete `typescript` |
+
+Cuando salga TypeScript 7.1 con API nueva y typescript-eslint la soporte, esto vuelve a ser una
+sola línea.
 
 ## Puesta en marcha
 
@@ -229,6 +257,24 @@ ejecutando el SQL por HTTPS. Los archivos de `prisma/migrations/` son idénticos
 generaría `migrate dev`, así que en Vercel y en CI (donde IPv6 funciona) se sigue usando
 `prisma migrate deploy` sin nada especial.
 
+### Migraciones escritas a mano
+
+Lo que el schema de Prisma no sabe expresar —columnas generadas, `tsvector`, índices GIN,
+extensiones— va en una migración escrita a mano, sin pasar por el diff. Hoy hay una:
+`20260725211500_busqueda_full_text_publicacion`, la del índice full-text de la búsqueda.
+
+Aun así la columna **se declara** en `schema.prisma` como `Unsupported("tsvector")?`, y el
+mismo bloque se copia a mano en `schema.snapshot.prisma`. Los dos lados hacen falta: si el
+schema no la declara, el próximo `prisma migrate dev` la lee como drift y genera un
+`DROP COLUMN`; si el snapshot no la tiene, el próximo `db:migrate:new` genera un `ADD COLUMN`
+de una columna que ya existe.
+
+Se verifica con un diff que tiene que dar vacío:
+
+```bash
+npx prisma migrate diff --from-schema prisma/schema.snapshot.prisma --to-schema prisma/schema.prisma --script
+```
+
 ## Cómo probar los flujos de auth sin configurar servicios externos
 
 Con solo `DATABASE_URL` y `AUTH_SECRET`:
@@ -264,8 +310,6 @@ invalida los anteriores del mismo tipo.
   (Etapa 5).
 - **Rate limiting inactivo sin Upstash.** El código degrada con gracia a propósito para el
   desarrollo local, pero es un requisito de release, no opcional en producción.
-- **Sin índice full-text.** El índice GIN sobre `titulo` + `descripcion` necesita SQL crudo
-  (`tsvector`) y se agrega en la Etapa 3, junto con las queries de búsqueda que lo justifican.
 - **La limpieza de huérfanas solo corre en producción.** Los crons de Vercel no se disparan en
   preview deployments, así que las fotos abandonadas en un preview quedan hasta que el cron de
   producción las alcance — comparten la misma cuenta de Cloudinary, así que igual las junta.
