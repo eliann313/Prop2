@@ -11,9 +11,12 @@ const ENDPOINT = "https://nominatim.openstreetmap.org/search";
 /**
  * La política de uso de Nominatim exige un User-Agent que identifique a la aplicación, con
  * forma de contacto. Sin esto devuelven 403 — no es una convención opcional.
+ *
+ * Va "Prop2" y no "Prop²": los valores de header HTTP son ASCII/latin-1, y `undici` rechaza
+ * un caracter fuera de ese rango antes de que el pedido salga.
  */
 const USER_AGENT =
-  "ProyectoInmuebles/0.1 (portfolio; https://github.com/eliann313/ProyectoInmuebles)";
+  "Prop2/0.1 (portfolio; https://github.com/eliann313/ProyectoInmuebles)";
 
 /**
  * Nominatim admite 1 request por segundo. Se serializan los pedidos encadenándolos en una

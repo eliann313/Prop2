@@ -15,7 +15,7 @@ export default function LayoutAuth({ children }: { children: React.ReactNode }) 
           href={RUTAS.home}
           className="text-muted-foreground mb-8 block text-center text-sm"
         >
-          ProyectoInmuebles
+          Prop²
         </Link>
         {children}
       </div>

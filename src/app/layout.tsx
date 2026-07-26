@@ -17,9 +17,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "ProyectoInmuebles — Comprá, vendé y alquilá sin intermediarios",
+    default: "Prop² — Comprá, vendé y alquilá sin intermediarios",
     // Las páginas hijas solo declaran su parte y el sufijo se agrega solo.
-    template: "%s | ProyectoInmuebles",
+    template: "%s | Prop²",
   },
   description:
     "Plataforma para publicar, vender y alquilar inmuebles en Argentina. Los propietarios publican directamente y los interesados contactan sin intermediarios.",

@@ -102,7 +102,7 @@ const bloquesDeFeatures = GRUPOS_DE_FEATURES.flatMap((grupo) => {
 
   return [
     {
-      name: `proyecto-inmuebles/features/${grupo.join("+")}/dominio`,
+      name: `prop2/features/${grupo.join("+")}/dominio`,
       // La capa de dominio: lo más restringida de todas.
       files: grupo.map((f) => `src/features/${f}/services/**/*.ts`),
       rules: {
@@ -116,7 +116,7 @@ const bloquesDeFeatures = GRUPOS_DE_FEATURES.flatMap((grupo) => {
       },
     },
     {
-      name: `proyecto-inmuebles/features/${grupo.join("+")}/aplicacion-y-presentacion`,
+      name: `prop2/features/${grupo.join("+")}/aplicacion-y-presentacion`,
       files: archivosDelGrupo,
       ignores: [
         // Los repositorios son la capa de infraestructura: ahí Prisma sí va.
@@ -135,7 +135,7 @@ const bloquesDeFeatures = GRUPOS_DE_FEATURES.flatMap((grupo) => {
       },
     },
     {
-      name: `proyecto-inmuebles/features/${grupo.join("+")}/infraestructura`,
+      name: `prop2/features/${grupo.join("+")}/infraestructura`,
       // Los repositorios pueden usar Prisma, pero siguen sin poder importar otras features.
       files: grupo.map((f) => `src/features/${f}/**/*Repository.ts`),
       rules: {
@@ -149,7 +149,7 @@ const bloquesDeFeatures = GRUPOS_DE_FEATURES.flatMap((grupo) => {
     ...(grupo.includes("auth")
       ? [
           {
-            name: `proyecto-inmuebles/features/${grupo.join("+")}/instancia-authjs`,
+            name: `prop2/features/${grupo.join("+")}/instancia-authjs`,
             files: ["src/features/auth/authJsInstance.ts"],
             rules: { "no-restricted-imports": ["error", { patterns: [cruzadas] }] },
           },
@@ -172,7 +172,7 @@ const eslintConfig = defineConfig([
   ]),
 
   {
-    name: "proyecto-inmuebles/reglas-generales",
+    name: "prop2/reglas-generales",
     rules: {
       // Warning y no error: hay casos genuinamente difíciles de tipar con librerías de
       // terceros. Pero todo `any` que quede tiene que llevar el comentario que lo justifique
@@ -191,7 +191,7 @@ const eslintConfig = defineConfig([
   },
 
   {
-    name: "proyecto-inmuebles/app-y-shared",
+    name: "prop2/app-y-shared",
     files: ["src/app/**/*.{ts,tsx}", "src/shared/**/*.{ts,tsx}"],
     // El singleton ES la importación del cliente.
     ignores: ["src/shared/lib/prismaClient.ts"],
@@ -206,7 +206,7 @@ const eslintConfig = defineConfig([
   ...bloquesDeFeatures,
 
   {
-    name: "proyecto-inmuebles/scripts-de-node",
+    name: "prop2/scripts-de-node",
     // Los scripts de línea de comandos y el seed no son parte de la app: su salida ES la
     // consola, y crean su propio cliente de Prisma porque corren fuera del proceso de Next.
     files: ["scripts/**/*.ts", "prisma/**/*.ts", "*.config.{ts,mts,mjs}"],
