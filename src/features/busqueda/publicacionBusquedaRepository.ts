@@ -224,6 +224,46 @@ export async function buscarPublicaciones(
   };
 }
 
+export type RangoDePrecios = { minimo: number; maximo: number } | null;
+
+/**
+ * Precio mínimo y máximo real para una moneda y una operación.
+ *
+ * Es lo que define los extremos del slider. Sin esto habría que fijarlos a mano, y no hay
+ * ningún par de números que sirva: una venta en dólares va de 30.000 a 500.000, y un alquiler
+ * en pesos de 200.000 a 2.000.000 por mes. Un slider de 0 a 999 millones deja todas las
+ * publicaciones apiladas en el primer pixel.
+ *
+ * Devuelve null cuando no hay ninguna publicación activa con esa combinación: ahí el filtro de
+ * precio directamente no se muestra, en vez de mostrar un slider de 0 a 0.
+ */
+export async function rangoDePrecios(
+  moneda: string,
+  operacion?: string,
+): Promise<RangoDePrecios> {
+  const filas = await prisma.$queryRaw<
+    { minimo: number | null; maximo: number | null }[]
+  >`
+    SELECT MIN(precio)::float8 AS minimo, MAX(precio)::float8 AS maximo
+    FROM publicacion
+    WHERE estado_publicacion = 'activa'
+      AND moneda = ${moneda}::moneda
+      ${operacion ? Prisma.sql`AND operacion = ${operacion}::operacion` : Prisma.empty}
+  `;
+
+  const fila = filas[0];
+  // MIN/MAX sobre cero filas devuelven una fila con NULL, no cero filas.
+  if (!fila || fila.minimo === null || fila.maximo === null) return null;
+
+  // Los extremos se redondean hacia afuera para que el slider llegue a números manejables y,
+  // sobre todo, para que la publicación más cara siga entrando cuando el usuario arrastra el
+  // tope hasta el final: con el máximo exacto, un redondeo del control la dejaría afuera.
+  return {
+    minimo: Math.floor(fila.minimo / 1000) * 1000,
+    maximo: Math.ceil(fila.maximo / 1000) * 1000,
+  };
+}
+
 /**
  * Ciudades y barrios que realmente tienen publicaciones activas, para poblar los selects.
  *
