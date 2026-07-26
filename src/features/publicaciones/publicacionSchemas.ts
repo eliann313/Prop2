@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { PROVINCIAS, TIPOS_INMUEBLE } from "@/shared/catalogoInmuebles";
+
 // Única fuente de verdad de las validaciones de publicaciones (14.3): las usa el wizard en el
 // cliente, paso por paso, y la Server Action al recibir el payload completo.
 //
@@ -7,88 +9,9 @@ import { z } from "zod";
 // poder validar SOLO el paso actual antes de dejar avanzar. Con un schema único habría que
 // listar a mano qué campos corresponden a cada paso, y esa lista se desincroniza en cuanto
 // alguien mueve un campo de lugar.
-
-const PROVINCIAS_ARGENTINAS = [
-  "Buenos Aires",
-  "CABA",
-  "Catamarca",
-  "Chaco",
-  "Chubut",
-  "Córdoba",
-  "Corrientes",
-  "Entre Ríos",
-  "Formosa",
-  "Jujuy",
-  "La Pampa",
-  "La Rioja",
-  "Mendoza",
-  "Misiones",
-  "Neuquén",
-  "Río Negro",
-  "Salta",
-  "San Juan",
-  "San Luis",
-  "Santa Cruz",
-  "Santa Fe",
-  "Santiago del Estero",
-  "Tierra del Fuego",
-  "Tucumán",
-] as const;
-
-export const PROVINCIAS = PROVINCIAS_ARGENTINAS;
-
-export const TIPOS_INMUEBLE = [
-  "casa",
-  "departamento",
-  "ph",
-  "terreno",
-  "local",
-  "oficina",
-  "galpon",
-  "cochera",
-  "quinta",
-  "campo",
-] as const;
-
-/** Etiquetas para mostrar; los valores crudos son los del enum de Postgres. */
-export const ETIQUETAS_TIPO_INMUEBLE: Record<(typeof TIPOS_INMUEBLE)[number], string> = {
-  casa: "Casa",
-  departamento: "Departamento",
-  ph: "PH",
-  terreno: "Terreno",
-  local: "Local comercial",
-  oficina: "Oficina",
-  galpon: "Galpón",
-  cochera: "Cochera",
-  quinta: "Quinta",
-  campo: "Campo",
-};
-
-export const ETIQUETAS_ESTADO_INMUEBLE = {
-  a_estrenar: "A estrenar",
-  excelente: "Excelente",
-  muy_bueno: "Muy bueno",
-  bueno: "Bueno",
-  a_refaccionar: "A refaccionar",
-} as const;
-
-export const ETIQUETAS_ORIENTACION = {
-  norte: "Norte",
-  sur: "Sur",
-  este: "Este",
-  oeste: "Oeste",
-  noreste: "Noreste",
-  noroeste: "Noroeste",
-  sureste: "Sureste",
-  suroeste: "Suroeste",
-} as const;
-
-export const ETIQUETAS_ESTADO_PUBLICACION = {
-  borrador: "Borrador",
-  activa: "Activa",
-  pausada: "Pausada",
-  eliminada: "Eliminada",
-} as const;
+//
+// Los catálogos (provincias, tipos, etiquetas) viven en shared/catalogoInmuebles: los comparte
+// con la búsqueda de la Etapa 3.
 
 /**
  * Convierte "" a undefined antes de validar.
@@ -142,7 +65,7 @@ export const schemaPasoBasicos = z.object({
 
 // ─── Paso 2: ubicación ─────────────────────────────────────────────────────────
 export const schemaPasoUbicacion = z.object({
-  provincia: z.enum(PROVINCIAS_ARGENTINAS, { message: "Elegí la provincia" }),
+  provincia: z.enum(PROVINCIAS, { message: "Elegí la provincia" }),
   ciudad: z.string().trim().min(2, "Ingresá la ciudad").max(80),
   barrio: opcional(z.string().trim().max(80)),
   codigoPostal: opcional(z.string().trim().max(12)),

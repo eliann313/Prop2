@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { geocodificarDireccion } from "@/features/publicaciones/actions/geocodificarDireccion";
 import { CampoSelect } from "@/features/publicaciones/components/CampoSelect";
 import { useCamposPublicacion } from "@/features/publicaciones/components/useCamposPublicacion";
-import { PROVINCIAS } from "@/features/publicaciones/publicacionSchemas";
+import { PROVINCIAS } from "@/shared/catalogoInmuebles";
 import { AvisoDeAccion } from "@/shared/components/AvisoDeAccion";
 import { CampoTexto } from "@/shared/components/CampoTexto";
 import { Button } from "@/shared/components/ui/button";

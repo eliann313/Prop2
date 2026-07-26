@@ -5,7 +5,7 @@ import { useCamposPublicacion } from "@/features/publicaciones/components/useCam
 import {
   ETIQUETAS_ESTADO_INMUEBLE,
   ETIQUETAS_ORIENTACION,
-} from "@/features/publicaciones/publicacionSchemas";
+} from "@/shared/catalogoInmuebles";
 import { CampoTexto } from "@/shared/components/CampoTexto";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Label } from "@/shared/components/ui/label";

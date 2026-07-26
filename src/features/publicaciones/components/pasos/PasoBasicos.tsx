@@ -2,10 +2,7 @@
 
 import { CampoSelect } from "@/features/publicaciones/components/CampoSelect";
 import { useCamposPublicacion } from "@/features/publicaciones/components/useCamposPublicacion";
-import {
-  ETIQUETAS_TIPO_INMUEBLE,
-  TIPOS_INMUEBLE,
-} from "@/features/publicaciones/publicacionSchemas";
+import { ETIQUETAS_TIPO_INMUEBLE, TIPOS_INMUEBLE } from "@/shared/catalogoInmuebles";
 import { CampoTexto } from "@/shared/components/CampoTexto";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
