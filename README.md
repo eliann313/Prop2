@@ -27,6 +27,34 @@ Etapa 3.
 | Tests         | Vitest + React Testing Library                     |
 | Deploy        | Vercel (Hobby)                                     |
 
+### Por qué `typescript` apunta a otro paquete
+
+En `package.json` hay dos entradas que a primera vista parecen un error:
+
+```json
+"@typescript/native": "npm:typescript@^7.0.2",
+"typescript": "npm:@typescript/typescript6@^6.0.2"
+```
+
+TypeScript 7 es el compilador reescrito en Go, y **no trae API programática** — llega recién en
+la 7.1. Todo lo que consume esa API (typescript-eslint, y por lo tanto `eslint-config-next`)
+revienta al arrancar si lo único instalado es la 7:
+
+```
+typescript-eslint does not support TS 7.0.
+```
+
+La solución oficial es correr las dos versiones al mismo tiempo, con los alias de arriba. El
+resultado es que `tsc` es el compilador nativo y `tsc6` el de JavaScript:
+
+| Comando | Versión | Quién lo usa                                   |
+| ------- | ------- | ---------------------------------------------- |
+| `tsc`   | 7.0.2   | `npm run type-check`                           |
+| `tsc6`  | 6.0.3   | typescript-eslint, vía el paquete `typescript` |
+
+Cuando salga TypeScript 7.1 con API nueva y typescript-eslint la soporte, esto vuelve a ser una
+sola línea.
+
 ## Puesta en marcha
 
 ```bash

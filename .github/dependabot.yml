@@ -37,6 +37,14 @@ updates:
         update-types: [version-update:semver-major]
       # next-auth está en beta: cada release puede cambiar la API sin aviso.
       - dependency-name: next-auth
+      # ESLint 10 saca `context.getFilename()`, que eslint-plugin-react todavía usa: el bump
+      # deja el lint sin arrancar. Se destraba cuando eslint-config-next actualice su plugin.
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
+      # `typescript` acá es un alias a @typescript/typescript6 (ver README): un bump a 7 lo
+      # rompe, porque el que tiene que ir a 7 es @typescript/native.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
 
   # Las actions también se versionan y también acumulan vulnerabilidades.
   - package-ecosystem: github-actions
