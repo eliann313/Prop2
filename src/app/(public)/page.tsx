@@ -44,8 +44,8 @@ export default async function PaginaHome() {
       <section className="border-t pt-6">
         <h2 className="text-muted-foreground text-sm font-medium">Estado del proyecto</h2>
         <p className="text-muted-foreground mt-2 max-w-prose text-sm">
-          Etapas 0 y 1 completas: infraestructura, modelo de datos y autenticación. El
-          alta y la búsqueda de publicaciones llegan en las etapas 2 y 3.
+          Etapas 0, 1 y 2 completas: infraestructura, modelo de datos, autenticación y
+          alta de publicaciones con fotos. La búsqueda pública es la Etapa 3.
         </p>
       </section>
     </div>
