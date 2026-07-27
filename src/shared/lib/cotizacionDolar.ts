@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Cotizacion } from "@/shared/utils/formatoDePrecio";
+import type { Cotizacion } from "@/shared/utils/formato";
 
 // Cotización del dólar para las equivalencias que se muestran debajo del precio (6.3/6.4).
 //

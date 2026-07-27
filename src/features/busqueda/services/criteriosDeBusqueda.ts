@@ -58,6 +58,27 @@ function ordenEfectivo(orden: Orden | undefined, hayTexto: boolean): Orden {
   return orden ?? "relevancia";
 }
 
+/**
+ * La moneda filtra SOLO cuando el precio entra en juego.
+ *
+ * El selector de moneda del formulario siempre manda un valor (un grupo de radios no tiene
+ * estado "ninguno"), así que tomarlo siempre significaría que cualquier búsqueda esconde la
+ * mitad del catálogo sin que el usuario haya pedido nada sobre precios.
+ *
+ * Cuando sí hay rango u orden por precio, la moneda es obligatoria: "hasta 150.000" no
+ * significa nada sin saber en qué moneda, y ordenar por precio mezclando escalas pone un
+ * departamento de USD 135.000 por debajo de uno de $200.000.000.
+ */
+function monedaAplicable(
+  moneda: string | undefined,
+  hayRangoDePrecio: boolean,
+  orden: Orden,
+): string | undefined {
+  const elPrecioImporta =
+    hayRangoDePrecio || orden === "precio_asc" || orden === "precio_desc";
+  return elPrecioImporta ? moneda : undefined;
+}
+
 export function construirCriterios(filtros: FiltrosDeBusqueda): CriteriosDeBusqueda {
   const texto = filtros.q;
   const [precioMin, precioMax] = ordenarRango(filtros.precioMin, filtros.precioMax);
@@ -66,6 +87,7 @@ export function construirCriterios(filtros: FiltrosDeBusqueda): CriteriosDeBusqu
     filtros.superficieMax,
   );
   const pagina = filtros.pagina ?? 1;
+  const orden = ordenEfectivo(filtros.orden, texto !== undefined);
 
   return {
     texto,
@@ -74,7 +96,11 @@ export function construirCriterios(filtros: FiltrosDeBusqueda): CriteriosDeBusqu
     barrio: filtros.barrio,
     tipo: filtros.tipo,
     operacion: filtros.operacion,
-    moneda: filtros.moneda,
+    moneda: monedaAplicable(
+      filtros.moneda,
+      precioMin !== undefined || precioMax !== undefined,
+      orden,
+    ),
     precioMin,
     precioMax,
     ambientesMin: filtros.ambientes,
@@ -83,7 +109,7 @@ export function construirCriterios(filtros: FiltrosDeBusqueda): CriteriosDeBusqu
     soloConCochera: filtros.cochera === true,
     superficieMin,
     superficieMax,
-    orden: ordenEfectivo(filtros.orden, texto !== undefined),
+    orden,
     pagina,
     offset: (pagina - 1) * TAMANIO_PAGINA,
     limite: TAMANIO_PAGINA,

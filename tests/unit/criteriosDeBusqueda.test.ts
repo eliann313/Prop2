@@ -103,6 +103,24 @@ describe("construirCriterios", () => {
     expect(criterios.offset).toBe(0);
   });
 
+  it("ignora la moneda si no hay nada que dependa del precio", () => {
+    // El grupo de radios del formulario siempre manda una moneda: tomarla siempre haría que
+    // cualquier búsqueda esconda la mitad del catálogo sin que nadie lo haya pedido.
+    expect(criteriosDe({ moneda: "USD" }).moneda).toBeUndefined();
+    expect(criteriosDe({ moneda: "USD", tipo: "casa" }).moneda).toBeUndefined();
+  });
+
+  it("aplica la moneda cuando hay rango de precio", () => {
+    expect(criteriosDe({ moneda: "USD", precioMax: "150000" }).moneda).toBe("USD");
+    expect(criteriosDe({ moneda: "ARS", precioMin: "100000" }).moneda).toBe("ARS");
+  });
+
+  it("aplica la moneda cuando se ordena por precio", () => {
+    // Ordenar por precio mezclando escalas pone USD 135.000 debajo de $200.000.000.
+    expect(criteriosDe({ moneda: "USD", orden: "precio_asc" }).moneda).toBe("USD");
+    expect(criteriosDe({ moneda: "ARS", orden: "precio_desc" }).moneda).toBe("ARS");
+  });
+
   it("trata ambientes, dormitorios y baños como mínimos", () => {
     const criterios = criteriosDe({ ambientes: "2", dormitorios: "1", banios: "2" });
 
