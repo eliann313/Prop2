@@ -1,5 +1,6 @@
 "use client";
 
+import { BotonGenerarDescripcion } from "@/features/ia/publico";
 import { CampoSelect } from "@/features/publicaciones/components/CampoSelect";
 import { useCamposPublicacion } from "@/features/publicaciones/components/useCamposPublicacion";
 import { ETIQUETAS_TIPO_INMUEBLE, TIPOS_INMUEBLE } from "@/shared/catalogoInmuebles";
@@ -14,6 +15,9 @@ import { Textarea } from "@/shared/components/ui/textarea";
 export function PasoBasicos() {
   const {
     register,
+    getValues,
+    setValue,
+    watch,
     formState: { errors },
   } = useCamposPublicacion();
 
@@ -50,7 +54,47 @@ export function PasoBasicos() {
       />
 
       <div className="grid gap-2">
-        <Label htmlFor="descripcion">Descripción</Label>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Label htmlFor="descripcion">Descripción</Label>
+          {/* El botón se muestra siempre, aunque no haya proveedores configurados. El flag
+              `iaHabilitada` vive en serverEnv, que es server-only: traerlo hasta acá obligaría
+              a cablear una prop a través del wizard entero o a duplicar la config en una
+              NEXT_PUBLIC_. Sale más barato que la action conteste "no está disponible en este
+              entorno, escribila a mano", que es información igual de accionable. */}
+          <BotonGenerarDescripcion
+            hayDescripcion={Boolean(watch("descripcion"))}
+            obtenerDatos={() => {
+              const valores = getValues();
+              // Solo se exige lo que ESTE paso tiene cargado. La ubicación se completa en el
+              // paso 2, así que pedirla acá dejaba el botón inutilizable justo donde vive: el
+              // vendedor tendría que ir al paso siguiente, volver, y recién ahí generar.
+              // Lo que falte simplemente no entra al prompt.
+              if (!valores.tipoInmueble || !valores.operacion) return null;
+              return {
+                tipoInmueble: valores.tipoInmueble,
+                operacion: valores.operacion,
+                ciudad: valores.ciudad,
+                provincia: valores.provincia,
+                barrio: valores.barrio,
+                ambientes: valores.ambientes,
+                dormitorios: valores.dormitorios,
+                banios: valores.banios,
+                superficieCubierta: valores.superficieCubierta,
+                superficieTotal: valores.superficieTotal,
+                antiguedadAnios: valores.antiguedadAnios,
+                tieneCochera: valores.tieneCochera,
+              };
+            }}
+            alGenerar={(descripcion) =>
+              // shouldValidate: la descripción generada supera el mínimo de 40 caracteres,
+              // así que corresponde limpiar el error que el usuario ya tenía en pantalla.
+              setValue("descripcion", descripcion, {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+            }
+          />
+        </div>
         <Textarea
           id="descripcion"
           rows={6}

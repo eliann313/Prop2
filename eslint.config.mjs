@@ -81,6 +81,21 @@ const KERNEL_DE_IDENTIDAD = [
   "@/features/usuarios/promocionDeRol",
 ];
 
+/**
+ * Segunda excepción: los servicios transversales.
+ *
+ * La IA no es una feature del dominio, es una capacidad que varias features consumen — hoy el
+ * wizard de publicaciones (5.4), y en V1.1 la búsqueda en lenguaje natural y las
+ * recomendaciones (7.2). No puede vivir en shared/ porque depende de SDKs de proveedores y de
+ * la config del servidor.
+ *
+ * Se aplica el mismo criterio que con el kernel de identidad: en vez de dejar la regla sin
+ * efecto, se declara una superficie pública mínima. El resto de features/ia/ —los adaptadores
+ * de cada proveedor, la cascada de fallback— sigue siendo privado, así que nadie puede saltarse
+ * el fallback llamando a Gemini directo.
+ */
+const SERVICIOS_TRANSVERSALES = ["@/features/ia/publico"];
+
 /** Prohíbe importar features que no estén en el grupo del archivo. */
 function importsDeOtrasFeatures(grupo) {
   const ajenas = GRUPOS_DE_FEATURES.flat().filter((f) => !grupo.includes(f));
@@ -88,10 +103,12 @@ function importsDeOtrasFeatures(grupo) {
     group: [
       ...ajenas.map((f) => `@/features/${f}/**`),
       // El `!` excluye del patrón anterior: estos quedan permitidos.
-      ...KERNEL_DE_IDENTIDAD.map((modulo) => `!${modulo}`),
+      ...[...KERNEL_DE_IDENTIDAD, ...SERVICIOS_TRANSVERSALES].map(
+        (modulo) => `!${modulo}`,
+      ),
     ],
     message:
-      "No se importa entre features. Si dos features necesitan lo mismo, ese código se sube a shared/ — o se expone como parte del kernel de identidad (ver KERNEL_DE_IDENTIDAD).",
+      "No se importa entre features. Si dos features necesitan lo mismo, ese código se sube a shared/ — o se expone como superficie pública (ver KERNEL_DE_IDENTIDAD y SERVICIOS_TRANSVERSALES).",
   };
 }
 
