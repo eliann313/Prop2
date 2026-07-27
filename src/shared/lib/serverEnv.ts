@@ -33,6 +33,15 @@ const esquemaEnv = z.object({
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
 
+  // Proveedores de IA (7.1). Los tres son opcionales y se usan en cascada: alcanza con tener
+  // uno para que la generación de descripciones funcione.
+  GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
+  GROQ_API_KEY: z.string().optional(),
+  OPENROUTER_API_KEY: z.string().optional(),
+  // El orden de la cascada vive en el entorno y no en el código: si mañana Gemini cambia su
+  // free tier, se reordena la prioridad desde Vercel sin volver a deployar (7.1).
+  IA_PROVIDER_ORDER: z.string().optional(),
+
   // Autoriza los endpoints de /api/cron. Vercel la inyecta sola en producción si se declara
   // en el proyecto; en local se pone a mano para poder probar el endpoint.
   CRON_SECRET: z.string().optional(),
@@ -73,6 +82,17 @@ export const emailHabilitado = Boolean(env.RESEND_API_KEY && env.EMAIL_FROM);
 /** Sin credenciales de Upstash, el rate limiting queda inactivo (permite todo). */
 export const rateLimitHabilitado = Boolean(
   env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN,
+);
+
+/**
+ * Con una sola API key alcanza: la cascada de 7.1 saltea los proveedores sin configurar.
+ *
+ * Sin ninguna, el botón de "generar descripción" ni se muestra — es preferible no ofrecer una
+ * función que va a fallar siempre. La IA nunca está en el camino crítico (7.3): sin ella el
+ * vendedor publica igual, escribiendo la descripción a mano.
+ */
+export const iaHabilitada = Boolean(
+  env.GOOGLE_GENERATIVE_AI_API_KEY ?? env.GROQ_API_KEY ?? env.OPENROUTER_API_KEY,
 );
 
 /**

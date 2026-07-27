@@ -40,6 +40,10 @@ const limitadores = {
   // comportamiento normal de alguien buscando casa. Igual frena el envío masivo, que acá
   // además gasta cuota de Resend y le llena la casilla a los vendedores (6.6).
   contacto: crearLimitador("contacto", 5, "10 m"),
+  // Generación con IA (7.3): la cuota del free tier es del proyecto entero, así que un solo
+  // vendedor generando en loop se la gasta para todos. Diez por hora alcanza de sobra para
+  // publicar varios inmuebles probando un par de versiones de cada descripción.
+  ia: crearLimitador("ia", 10, "1 h"),
 } as const;
 
 export type NombreLimitador = keyof typeof limitadores;
