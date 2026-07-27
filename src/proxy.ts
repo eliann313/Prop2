@@ -23,6 +23,9 @@ const { auth } = NextAuth(authJsOptions);
 const RUTAS_PROTEGIDAS: { prefijo: string; roles?: readonly string[] }[] = [
   { prefijo: RUTAS.admin, roles: ["admin"] },
   { prefijo: RUTAS.dashboard },
+  // Los favoritos son de un usuario: sin sesión no hay nada que mostrar. La página igual
+  // vuelve a exigirla del lado del servidor — esto solo evita el parpadeo.
+  { prefijo: RUTAS.favoritos },
 ];
 
 /** Páginas de auth: si ya hay sesión, no tiene sentido mostrarlas. */

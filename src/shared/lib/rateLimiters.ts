@@ -36,6 +36,10 @@ const limitadores = {
   // Reenvío de verificación y reseteo mandan emails: el límite protege la cuota de Resend
   // además de la cuenta del usuario.
   emailTransaccional: crearLimitador("email-transaccional", 3, "15 m"),
+  // Contacto: más holgado que los de auth porque consultar por varios inmuebles seguidos es
+  // comportamiento normal de alguien buscando casa. Igual frena el envío masivo, que acá
+  // además gasta cuota de Resend y le llena la casilla a los vendedores (6.6).
+  contacto: crearLimitador("contacto", 5, "10 m"),
 } as const;
 
 export type NombreLimitador = keyof typeof limitadores;

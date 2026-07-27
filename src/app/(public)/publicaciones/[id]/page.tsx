@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { obtenerUsuarioActual } from "@/features/auth/sessionQueries";
+import { FormularioDeConsulta } from "@/features/contacto/components/FormularioDeConsulta";
+import { BotonFavorito } from "@/features/favoritos/components/BotonFavorito";
+import { idsFavoritosDe } from "@/features/favoritos/favoritoRepository";
 import { GaleriaDeFotos } from "@/features/publicaciones/components/GaleriaDeFotos";
 import {
   buscarPublicacionPublica,
@@ -28,6 +33,16 @@ import {
   formatearSuperficie,
 } from "@/shared/utils/formato";
 import { linkDeWhatsapp } from "@/shared/utils/whatsapp";
+
+// Leaflet toca `window` al construirse, así que el mapa no puede renderizarse en el servidor.
+// El placeholder reserva la altura exacta del mapa: sin él, la página salta cuando carga.
+const MapaDeUbicacion = dynamic(
+  () =>
+    import("@/features/publicaciones/components/MapaDeUbicacion").then(
+      (modulo) => modulo.MapaDeUbicacion,
+    ),
+  { loading: () => <div className="bg-muted h-72 w-full rounded-lg" /> },
+);
 
 export async function generateMetadata(
   props: PageProps<"/publicaciones/[id]">,
@@ -66,6 +81,11 @@ export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id
   }
 
   const similares = await publicacionesSimilares(publicacion);
+
+  const usuario = await obtenerUsuarioActual();
+  const esFavorito = usuario
+    ? (await idsFavoritosDe(usuario.id, [publicacion.id])).has(publicacion.id)
+    : false;
 
   const whatsapp = linkDeWhatsapp(
     publicacion.usuario.telefono,
@@ -189,6 +209,22 @@ export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id
             </dl>
           </section>
 
+          <section className="grid gap-3">
+            <h2 className="text-lg font-medium">Ubicación</h2>
+            <MapaDeUbicacion
+              latitud={Number(publicacion.latitud)}
+              longitud={Number(publicacion.longitud)}
+              exacta={publicacion.direccion !== null}
+              etiqueta={publicacion.titulo}
+            />
+            {publicacion.direccion === null ? (
+              <p className="text-muted-foreground text-xs">
+                El vendedor eligió no publicar la dirección exacta: el mapa muestra la
+                zona.
+              </p>
+            ) : null}
+          </section>
+
           {servicios.length + comodidades.length > 0 ? (
             <section className="grid gap-3">
               <h2 className="text-lg font-medium">Servicios y comodidades</h2>
@@ -204,21 +240,30 @@ export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id
         </div>
 
         <aside className="grid gap-4 rounded-lg border p-5 lg:sticky lg:top-6">
-          <div className="grid gap-1">
-            <p className="text-2xl font-semibold">
-              {formatearPrecio(precio, moneda)}
-              {publicacion.operacion === "alquiler" ? (
-                <span className="text-muted-foreground text-base font-normal">
-                  {" "}
-                  / mes
-                </span>
-              ) : null}
-            </p>
-            {formatearEquivalencia(precio, moneda, cotizacion) ? (
-              <p className="text-muted-foreground text-sm">
-                {formatearEquivalencia(precio, moneda, cotizacion)}
+          <div className="flex items-start justify-between gap-3">
+            <div className="grid gap-1">
+              <p className="text-2xl font-semibold">
+                {formatearPrecio(precio, moneda)}
+                {publicacion.operacion === "alquiler" ? (
+                  <span className="text-muted-foreground text-base font-normal">
+                    {" "}
+                    / mes
+                  </span>
+                ) : null}
               </p>
-            ) : null}
+              {formatearEquivalencia(precio, moneda, cotizacion) ? (
+                <p className="text-muted-foreground text-sm">
+                  {formatearEquivalencia(precio, moneda, cotizacion)}
+                </p>
+              ) : null}
+            </div>
+
+            <BotonFavorito
+              publicacionId={publicacion.id}
+              esFavorito={esFavorito}
+              volverA={`${RUTAS.publicaciones}/${publicacion.id}`}
+              variante="linea"
+            />
           </div>
 
           <Separator />
@@ -235,12 +280,24 @@ export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id
                 Consultar por WhatsApp
               </a>
             </Button>
-          ) : (
-            <p className="text-muted-foreground text-sm">
-              Este vendedor no cargó un teléfono. El formulario de contacto llega en la
-              próxima entrega.
-            </p>
-          )}
+          ) : null}
+
+          {/* Email directo como tercera vía (6.6): quien prefiere su propio cliente de correo
+              no debería estar obligado a usar el formulario. El mailto va contra el email de
+              quien consulta, no contra el del vendedor: la dirección del vendedor nunca se
+              publica en el HTML. */}
+          <div id="consultar" className="grid gap-3">
+            <p className="text-sm font-medium">Consultar por este inmueble</p>
+            <FormularioDeConsulta
+              publicacionId={publicacion.id}
+              tituloPublicacion={publicacion.titulo}
+              usuario={
+                usuario
+                  ? { nombre: usuario.name ?? "", email: usuario.email ?? "" }
+                  : null
+              }
+            />
+          </div>
 
           <p className="text-muted-foreground text-xs">{publicacion.vistas} visitas</p>
         </aside>

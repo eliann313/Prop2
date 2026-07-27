@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { obtenerUsuarioActual } from "@/features/auth/sessionQueries";
 import { parsearFiltros } from "@/features/busqueda/busquedaSchemas";
+import { BotonFavorito } from "@/features/favoritos/components/BotonFavorito";
+import { idsFavoritosDe } from "@/features/favoritos/favoritoRepository";
 import { FormularioDeFiltros } from "@/features/busqueda/components/FormularioDeFiltros";
 import { Paginador } from "@/features/busqueda/components/Paginador";
 import {
@@ -57,6 +60,18 @@ export default async function PaginaPublicaciones(props: PageProps<"/publicacion
   const paginas = totalDePaginas(pagina.total);
   const parametros = aParametros(searchParams);
   const filtrando = hayFiltrosAplicados(criterios);
+
+  // Los favoritos del usuario para TODA la página en una consulta, no una por tarjeta.
+  const usuario = await obtenerUsuarioActual();
+  const favoritos = usuario
+    ? await idsFavoritosDe(
+        usuario.id,
+        pagina.resultados.map((resultado) => resultado.id),
+      )
+    : new Set<string>();
+
+  // La búsqueda entera se preserva para volver acá después del login.
+  const volverA = `${RUTAS.publicaciones}${construirQuery(parametros, {})}`;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[280px_1fr] lg:items-start">
@@ -118,6 +133,13 @@ export default async function PaginaPublicaciones(props: PageProps<"/publicacion
                 key={publicacion.id}
                 publicacion={publicacion}
                 cotizacion={cotizacion}
+                accion={
+                  <BotonFavorito
+                    publicacionId={publicacion.id}
+                    esFavorito={favoritos.has(publicacion.id)}
+                    volverA={volverA}
+                  />
+                }
               />
             ))}
           </div>

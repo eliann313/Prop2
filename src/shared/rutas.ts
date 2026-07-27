@@ -16,6 +16,7 @@ export const RUTAS = {
   recuperarPassword: "/recuperar-password",
   restablecerPassword: "/restablecer-password",
   publicaciones: "/publicaciones",
+  favoritos: "/favoritos",
   dashboard: "/dashboard",
   admin: "/admin",
   home: "/",
