@@ -28,6 +28,9 @@ export async function EncabezadoSitio() {
               {/* Visible para cualquier sesión: el dashboard es donde un comprador crea su
                   primera publicación y se convierte en vendedor (3.4). */}
               <Button asChild variant="ghost" size="sm">
+                <Link href={RUTAS.favoritos}>Favoritos</Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm">
                 <Link href={RUTAS.dashboard}>Mis publicaciones</Link>
               </Button>
               {usuario.rol === "admin" && (

@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
@@ -38,6 +39,12 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         {children}
         <Toaster />
+        {/* Vercel Web Analytics. Es sin cookies y no guarda datos personales, así que no
+            necesita banner de consentimiento — que es justamente por lo que se elige antes que
+            Google Analytics para un sitio público con tráfico argentino.
+            Reemplaza a la PR generada por el bot de Vercel, que venía armada contra la
+            estructura vieja del proyecto (app/, .eslintrc.json, tailwind.config.ts). */}
+        <Analytics />
       </body>
     </html>
   );

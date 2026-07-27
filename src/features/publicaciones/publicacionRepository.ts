@@ -6,6 +6,7 @@ import type {
   Orientacion,
   TipoInmueble,
 } from "@/generated/prisma/enums";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/shared/lib/prismaClient";
 
 // Capa de infraestructura (4.2): el único archivo de la feature que importa Prisma.
@@ -294,6 +295,84 @@ export async function obtenerPublicIdsReferenciados(): Promise<string[]> {
     select: { publicId: true },
   });
   return filas.map((fila) => fila.publicId);
+}
+
+/**
+ * Una publicación para su página pública. Devuelve null si no existe o no está activa.
+ *
+ * El estado va en el WHERE y no se chequea después: una publicación pausada, en borrador o
+ * eliminada tiene que ser un 404 para cualquiera que tenga el link, no una fila que llega a
+ * memoria y depende de que quien llama se acuerde de mirar el estado.
+ */
+export function buscarPublicacionPublica(id: string) {
+  return prisma.publicacion.findFirst({
+    where: { id, estadoPublicacion: "activa" },
+    include: {
+      imagenes: { orderBy: { orden: "asc" } },
+      caracteristicas: {
+        select: { caracteristica: { select: { nombre: true, categoria: true } } },
+      },
+      // Del vendedor solo lo que se muestra. El email NO entra: el contacto va por el
+      // formulario (6.6), y publicar la dirección de correo de cada vendedor en el HTML es
+      // regalarle la base de emails a cualquier scraper.
+      usuario: { select: { id: true, name: true, telefono: true } },
+    },
+  });
+}
+
+export type PublicacionPublica = NonNullable<
+  Awaited<ReturnType<typeof buscarPublicacionPublica>>
+>;
+
+/** Cuántas similares se muestran: 6 llena dos filas de tres sin dejar huecos. */
+const SIMILARES = 6;
+
+/**
+ * Publicaciones parecidas a la que se está viendo (6.4).
+ *
+ * Mismo tipo, misma operación, misma ciudad y precio dentro de ±20%. La moneda también tiene
+ * que coincidir, aunque 6.4 no lo diga: un ±20% calculado entre un precio en dólares y otro en
+ * pesos no compara nada, y traería como "similar" cualquier cosa.
+ */
+export function publicacionesSimilares(publicacion: {
+  id: string;
+  tipoInmueble: TipoInmueble;
+  operacion: Operacion;
+  ciudad: string;
+  moneda: Moneda;
+  precio: Prisma.Decimal;
+}) {
+  const precio = Number(publicacion.precio);
+
+  return prisma.publicacion.findMany({
+    where: {
+      id: { not: publicacion.id },
+      estadoPublicacion: "activa",
+      tipoInmueble: publicacion.tipoInmueble,
+      operacion: publicacion.operacion,
+      ciudad: publicacion.ciudad,
+      moneda: publicacion.moneda,
+      precio: { gte: precio * 0.8, lte: precio * 1.2 },
+    },
+    select: SELECT_TARJETA,
+    orderBy: [{ publishedAt: "desc" }],
+    take: SIMILARES,
+  });
+}
+
+/**
+ * Suma una visita.
+ *
+ * Va sin `await` desde la página: el contador es un dato de conveniencia para el vendedor y no
+ * tiene por qué demorar el render del inmueble. Si la escritura falla, se pierde una visita —
+ * que es exactamente lo que corresponde perder ante un error de base.
+ */
+export function incrementarVistas(id: string) {
+  return prisma.publicacion.update({
+    where: { id },
+    data: { vistas: { increment: 1 } },
+    select: { id: true },
+  });
 }
 
 export function listarCaracteristicas() {

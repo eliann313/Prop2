@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { ETIQUETAS_TIPO_INMUEBLE } from "@/shared/catalogoInmuebles";
 import { Badge } from "@/shared/components/ui/badge";
 import { Card, CardContent } from "@/shared/components/ui/card";
+import { cn } from "@/shared/utils/cn";
 import {
   formatearEquivalencia,
   formatearPrecio,
@@ -38,9 +40,24 @@ type Props = {
   publicacion: PublicacionEnTarjeta;
   /** Null cuando el servicio de cotización no respondió: ahí no se muestra la equivalencia. */
   cotizacion: Cotizacion | null;
+  /**
+   * Control que se superpone a la foto — hoy, el botón de favorito.
+   *
+   * Entra como slot y no importando el botón acá: este componente vive en shared/ y el favorito
+   * es una feature. Invertir la dependencia deja que la página, que ya conoce las dos cosas,
+   * las junte — y de paso la tarjeta sigue sirviendo donde no haya favoritos.
+   */
+  accion?: ReactNode;
+  /** Marca un favorito cuya publicación ya no está activa (6.5). */
+  noDisponible?: boolean;
 };
 
-export function TarjetaDePublicacion({ publicacion, cotizacion }: Props) {
+export function TarjetaDePublicacion({
+  publicacion,
+  cotizacion,
+  accion,
+  noDisponible = false,
+}: Props) {
   const moneda = publicacion.moneda === "USD" ? "USD" : "ARS";
   const equivalencia = formatearEquivalencia(publicacion.precio, moneda, cotizacion);
   const portada = publicacion.imagenThumbnail ?? publicacion.imagenUrl;
@@ -55,8 +72,21 @@ export function TarjetaDePublicacion({ publicacion, cotizacion }: Props) {
   ].filter(Boolean);
 
   return (
-    <Card className="overflow-hidden pt-0">
-      <Link href={`/publicaciones/${publicacion.id}`} className="grid gap-3">
+    <Card className="relative overflow-hidden pt-0">
+      {/* Fuera del Link a propósito: un <button> adentro de un <a> es HTML inválido, y en la
+          práctica hace que el click en el corazón navegue a la publicación. */}
+      {accion}
+
+      {noDisponible ? (
+        <Badge variant="outline" className="bg-background/90 absolute top-2 left-2 z-10">
+          Ya no disponible
+        </Badge>
+      ) : null}
+
+      <Link
+        href={`/publicaciones/${publicacion.id}`}
+        className={cn("grid gap-3", noDisponible && "opacity-60")}
+      >
         <div className="bg-muted relative aspect-[4/3] w-full overflow-hidden">
           {portada ? (
             // `sizes` no es opcional con `fill`: sin él Next pide la imagen al ancho del
