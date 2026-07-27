@@ -5,7 +5,7 @@ import type { PublicacionParaTarjeta } from "@/features/publicaciones/publicacio
 import {
   ETIQUETAS_ESTADO_PUBLICACION,
   ETIQUETAS_TIPO_INMUEBLE,
-} from "@/features/publicaciones/publicacionSchemas";
+} from "@/shared/catalogoInmuebles";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";

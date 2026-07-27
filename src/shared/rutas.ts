@@ -15,6 +15,7 @@ export const RUTAS = {
   verificarEmail: "/verificar-email",
   recuperarPassword: "/recuperar-password",
   restablecerPassword: "/restablecer-password",
+  publicaciones: "/publicaciones",
   dashboard: "/dashboard",
   admin: "/admin",
   home: "/",
