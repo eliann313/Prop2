@@ -5,8 +5,11 @@
 export type DatosParaDescripcion = {
   tipoInmueble: string;
   operacion: string;
-  ciudad: string;
-  provincia: string;
+  // La ubicación es opcional porque el botón vive en el paso 1 del wizard y la ciudad se carga
+  // en el paso 2: exigirla dejaría el botón muerto justo donde está. Sin ubicación el prompt
+  // simplemente no la menciona — que es mejor que un modelo inventando un barrio.
+  ciudad?: string;
+  provincia?: string;
   barrio?: string;
   ambientes?: number;
   dormitorios?: number;

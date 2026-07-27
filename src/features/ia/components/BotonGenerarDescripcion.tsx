@@ -28,7 +28,7 @@ export function BotonGenerarDescripcion({
   function alClickear() {
     const datos = obtenerDatos();
     if (!datos) {
-      toast.error("Completá el tipo, la operación y la ubicación antes de generar.");
+      toast.error("Elegí el tipo de inmueble y la operación antes de generar.");
       return;
     }
 

@@ -15,8 +15,10 @@ import { exito, fallo, type ResultadoAccion } from "@/shared/types/resultadoAcci
 const schema = z.object({
   tipoInmueble: z.string().min(1),
   operacion: z.string().min(1),
-  ciudad: z.string().min(1),
-  provincia: z.string().min(1),
+  // Opcionales: ver el comentario de DatosParaDescripcion. El wizard puede pedir la generación
+  // antes de llegar al paso de ubicación.
+  ciudad: z.string().optional(),
+  provincia: z.string().optional(),
   barrio: z.string().optional(),
   ambientes: z.coerce.number().int().positive().optional(),
   dormitorios: z.coerce.number().int().positive().optional(),

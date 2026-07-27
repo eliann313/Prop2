@@ -63,6 +63,14 @@ describe("construirPrompt", () => {
     expect(construirPrompt({ ...BASE, tieneCochera: false })).not.toContain("Cochera");
   });
 
+  it("funciona sin ubicación, que se carga en otro paso del wizard", () => {
+    const prompt = construirPrompt({ tipoInmueble: "casa", operacion: "alquiler" });
+
+    expect(prompt).toContain("casa");
+    expect(prompt).not.toContain("Ubicación");
+    expect(prompt).not.toContain("undefined");
+  });
+
   it("lista las características seleccionadas", () => {
     const prompt = construirPrompt({ ...BASE, caracteristicas: ["Pileta", "Parrilla"] });
 

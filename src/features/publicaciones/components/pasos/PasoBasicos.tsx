@@ -65,11 +65,11 @@ export function PasoBasicos() {
             hayDescripcion={Boolean(watch("descripcion"))}
             obtenerDatos={() => {
               const valores = getValues();
-              // La IA necesita al menos qué es y dónde está; sin eso el modelo tendría que
-              // inventar, que es justo lo que el prompt le prohíbe.
-              if (!valores.tipoInmueble || !valores.operacion || !valores.ciudad) {
-                return null;
-              }
+              // Solo se exige lo que ESTE paso tiene cargado. La ubicación se completa en el
+              // paso 2, así que pedirla acá dejaba el botón inutilizable justo donde vive: el
+              // vendedor tendría que ir al paso siguiente, volver, y recién ahí generar.
+              // Lo que falte simplemente no entra al prompt.
+              if (!valores.tipoInmueble || !valores.operacion) return null;
               return {
                 tipoInmueble: valores.tipoInmueble,
                 operacion: valores.operacion,
