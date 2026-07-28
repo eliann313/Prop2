@@ -135,12 +135,56 @@ distintas: lo que dos features compartan se sube a `shared/`.
 | `npm run type-check`        | `next typegen` + `tsc --noEmit`                 |
 | `npm test`                  | Tests unitarios (Vitest)                        |
 | `npm run test:coverage`     | Tests con reporte de cobertura                  |
+| `npm run test:db:up`        | Levanta el Postgres de test y lo migra          |
+| `npm run test:integration`  | Tests de integración (necesita la base arriba)  |
+| `npm run test:e2e`          | E2E con Playwright (necesita la base arriba)    |
+| `npm run test:all`          | Los tres niveles, en orden                      |
+| `npm run test:db:down`      | Apaga el contenedor de test                     |
 | `npm run format`            | Prettier sobre todo el repo                     |
 | `npm run db:generate`       | Genera el cliente de Prisma                     |
 | `npm run db:migrate:deploy` | Aplica las migraciones pendientes               |
 | `npm run db:seed`           | Carga el catálogo de características            |
 | `npm run db:verify`         | Lista tablas, enums e índices reales de la base |
 | `npm run db:studio`         | Prisma Studio                                   |
+
+## Tests
+
+Tres niveles, con requisitos distintos a propósito:
+
+| Nivel           | Contra qué corre                  | Cuándo               |
+| --------------- | --------------------------------- | -------------------- |
+| **Unitarios**   | Nada externo (jsdom, en paralelo) | Siempre, `npm test`  |
+| **Integración** | Postgres real (node, en serie)    | Con Docker levantado |
+| **E2E**         | La app entera + Postgres real     | Con Docker levantado |
+
+`npm test` no depende de Docker a propósito: es lo que se corre veinte veces por día.
+
+Para los otros dos hace falta el contenedor, **con Docker Desktop abierto**:
+
+```bash
+npm run test:db:up && npm run test:all
+```
+
+### Por qué Docker y no un branch de Neon
+
+La sección 12.2 del documento de arquitectura propone un branch dedicado de Neon. Se usa un
+contenedor, y la fidelidad está verificada: Neon corre **PostgreSQL 17.10** con `plpgsql` y
+`unaccent`, y `postgres:17-alpine` trae lo mismo. Eso no es un detalle — el índice full-text y la
+función `sin_acentos()` dependen de `unaccent`, así que sobre una imagen sin contrib la búsqueda
+no se podría testear.
+
+A cambio: en CI el contenedor lo levanta `services:` de GitHub Actions, el reseteo entre corridas
+sale gratis porque nace vacío, no hay credenciales de Neon en el pipeline y corre sin internet.
+
+Lo que **no** cubre es el pooler de Neon y su driver serverless. Un problema propio de ese
+transporte (como el `P1001` por IPv6) no lo agarra ningún test de acá: es riesgo de deploy, no de
+lógica de negocio.
+
+Por el mismo criterio los E2E corren contra la app local y no contra el preview de Vercel como
+propone 12.3: los previews usan las variables de producción, así que unos tests que registran
+usuarios y publican inmuebles estarían escribiendo en la base real. La config de Playwright además
+**apaga explícitamente** Resend, Upstash y los proveedores de IA — sin eso el proceso hereda las
+credenciales del `.env` y los tests le pegan a los servicios de verdad.
 
 ## Deploy en Vercel
 

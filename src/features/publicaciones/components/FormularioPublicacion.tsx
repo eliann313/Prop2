@@ -158,8 +158,18 @@ export function FormularioPublicacion({
             Atrás
           </Button>
 
+          {/* Las `key` distintas NO son decorativas y sacarlas reintroduce un bug real: sin
+              ellas React ve el mismo componente en la misma posición y reutiliza el nodo del
+              DOM, cambiándole `type` de "button" a "submit" en el lugar. El click que lleva del
+              paso 3 al 4 corre `siguiente`, React re-renderiza durante el despacho del evento,
+              y para cuando el navegador resuelve la acción por defecto el botón YA es de
+              submit: el formulario se enviaba solo al llegar al último paso, guardando el
+              borrador sin que nadie lo pidiera y sin pasar por las fotos.
+              Con `key` distintas React desmonta uno y monta el otro, así que el nodo que
+              recibió el click deja de existir y no queda ninguna acción por defecto que
+              disparar. Lo encontró el E2E de 12.3. */}
           {esUltimoPaso ? (
-            <Button type="submit" disabled={guardando}>
+            <Button key="guardar" type="submit" disabled={guardando}>
               {guardando
                 ? "Guardando…"
                 : publicacionId
@@ -167,7 +177,7 @@ export function FormularioPublicacion({
                   : "Guardar borrador"}
             </Button>
           ) : (
-            <Button type="button" onClick={siguiente}>
+            <Button key="siguiente" type="button" onClick={siguiente}>
               Siguiente
             </Button>
           )}

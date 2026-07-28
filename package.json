@@ -18,7 +18,8 @@
     "test:db:up": "tsx scripts/prepararBaseDeTest.ts",
     "test:db:down": "docker compose -f docker-compose.test.yml down",
     "test:integration": "vitest run --config vitest.integration.config.mts",
-    "test:all": "npm test && npm run test:integration",
+    "test:e2e": "playwright test",
+    "test:all": "npm test && npm run test:integration && npm run test:e2e",
     "db:generate": "prisma generate",
     "db:migrate:new": "tsx scripts/crearMigracion.ts",
     "db:migrate:deploy": "prisma migrate deploy",
@@ -62,6 +63,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@prisma/adapter-pg": "^7.9.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
