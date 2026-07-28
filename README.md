@@ -329,6 +329,13 @@ invalida los anteriores del mismo tipo.
 - **`legacy-peer-deps=true` en `.npmrc`.** Es un conflicto entre peers opcionales de
   `@hookform/resolvers` y `@typeschema/valibot` que no involucra ningún paquete que el proyecto
   importe. Se puede quitar cuando upstream lo resuelva.
-- **Avisos de `npm audit`.** Los que quedan son transitivos de tooling de desarrollo (ReDoS en
-  `minimatch`/`brace-expansion` vía ESLint, `postcss`/`sharp` vía Next). No hay camino desde
-  una request de producción hasta ellos, y el `--force` degradaría Prisma a una versión anterior.
+- **Avisos de `npm audit`.** Los que tocaban producción se resolvieron con `overrides` en
+  `package.json`: `postcss` y `sharp` llegaban pinneados por Next a versiones vulnerables, y
+  `@hono/node-server` entraba por el CLI de shadcn. Lo que propone `npm audit fix --force` para
+  esos tres es **bajar Next a la 9.3.3**, que es peor que el problema; el override los sube sin
+  tocar Next.
+
+  Quedan 9 avisos, todos la misma cadena: `minimatch`/`brace-expansion` vía ESLint y sus
+  plugins. Resolverlos exige ESLint 10, que es un major y arrastra a `eslint-config-next`. Son
+  ReDoS y DoS en herramientas que corren en la máquina del desarrollador y en CI sobre código
+  propio: no hay camino desde una request de producción hasta ellos.
