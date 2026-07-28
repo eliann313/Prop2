@@ -1,12 +1,13 @@
 "use server";
 
-import { schemaRegistro } from "@/features/auth/authSchemas";
+import { MENSAJE_PASSWORD_FILTRADA, schemaRegistro } from "@/features/auth/authSchemas";
 import { emitirYEnviarVerificacionEmail } from "@/features/auth/emisionDeTokens";
 import { hashearPassword } from "@/features/auth/services/passwordService";
 import {
   buscarUsuarioPorEmail,
   crearUsuarioConCredenciales,
 } from "@/features/usuarios/usuarioRepository";
+import { estaEnFiltraciones } from "@/shared/lib/passwordsFiltradas";
 import { consumirIntento } from "@/shared/lib/rateLimiters";
 import { exito, fallo, type ResultadoAccion } from "@/shared/types/resultadoAccion";
 
@@ -32,6 +33,16 @@ export async function registrarUsuario(entrada: unknown): Promise<ResultadoAccio
   const limite = await consumirIntento("registro", email);
   if (!limite.permitido) {
     return fallo("Demasiados intentos. Probá de nuevo en unos minutos.");
+  }
+
+  // Va ANTES de mirar si el email existe, y eso no filtra nada: la respuesta depende solo de la
+  // contraseña, que es un dato que quien registra ya conoce. Al revés —chequear después— quien
+  // eligiera una contraseña filtrada para un email ya registrado recibiría el éxito genérico y
+  // se quedaría sin enterarse.
+  if (await estaEnFiltraciones(password)) {
+    return fallo(MENSAJE_PASSWORD_FILTRADA, {
+      password: [MENSAJE_PASSWORD_FILTRADA],
+    });
   }
 
   const yaExiste = await buscarUsuarioPorEmail(email);

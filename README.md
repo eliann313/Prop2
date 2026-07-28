@@ -135,12 +135,56 @@ distintas: lo que dos features compartan se sube a `shared/`.
 | `npm run type-check`        | `next typegen` + `tsc --noEmit`                 |
 | `npm test`                  | Tests unitarios (Vitest)                        |
 | `npm run test:coverage`     | Tests con reporte de cobertura                  |
+| `npm run test:db:up`        | Levanta el Postgres de test y lo migra          |
+| `npm run test:integration`  | Tests de integración (necesita la base arriba)  |
+| `npm run test:e2e`          | E2E con Playwright (necesita la base arriba)    |
+| `npm run test:all`          | Los tres niveles, en orden                      |
+| `npm run test:db:down`      | Apaga el contenedor de test                     |
 | `npm run format`            | Prettier sobre todo el repo                     |
 | `npm run db:generate`       | Genera el cliente de Prisma                     |
 | `npm run db:migrate:deploy` | Aplica las migraciones pendientes               |
 | `npm run db:seed`           | Carga el catálogo de características            |
 | `npm run db:verify`         | Lista tablas, enums e índices reales de la base |
 | `npm run db:studio`         | Prisma Studio                                   |
+
+## Tests
+
+Tres niveles, con requisitos distintos a propósito:
+
+| Nivel           | Contra qué corre                  | Cuándo               |
+| --------------- | --------------------------------- | -------------------- |
+| **Unitarios**   | Nada externo (jsdom, en paralelo) | Siempre, `npm test`  |
+| **Integración** | Postgres real (node, en serie)    | Con Docker levantado |
+| **E2E**         | La app entera + Postgres real     | Con Docker levantado |
+
+`npm test` no depende de Docker a propósito: es lo que se corre veinte veces por día.
+
+Para los otros dos hace falta el contenedor, **con Docker Desktop abierto**:
+
+```bash
+npm run test:db:up && npm run test:all
+```
+
+### Por qué Docker y no un branch de Neon
+
+La sección 12.2 del documento de arquitectura propone un branch dedicado de Neon. Se usa un
+contenedor, y la fidelidad está verificada: Neon corre **PostgreSQL 17.10** con `plpgsql` y
+`unaccent`, y `postgres:17-alpine` trae lo mismo. Eso no es un detalle — el índice full-text y la
+función `sin_acentos()` dependen de `unaccent`, así que sobre una imagen sin contrib la búsqueda
+no se podría testear.
+
+A cambio: en CI el contenedor lo levanta `services:` de GitHub Actions, el reseteo entre corridas
+sale gratis porque nace vacío, no hay credenciales de Neon en el pipeline y corre sin internet.
+
+Lo que **no** cubre es el pooler de Neon y su driver serverless. Un problema propio de ese
+transporte (como el `P1001` por IPv6) no lo agarra ningún test de acá: es riesgo de deploy, no de
+lógica de negocio.
+
+Por el mismo criterio los E2E corren contra la app local y no contra el preview de Vercel como
+propone 12.3: los previews usan las variables de producción, así que unos tests que registran
+usuarios y publican inmuebles estarían escribiendo en la base real. La config de Playwright además
+**apaga explícitamente** Resend, Upstash y los proveedores de IA — sin eso el proceso hereda las
+credenciales del `.env` y los tests le pegan a los servicios de verdad.
 
 ## Deploy en Vercel
 
@@ -304,6 +348,19 @@ invalida los anteriores del mismo tipo.
 
 ## Deuda conocida
 
+- **La home y el detalle se sirven SSR, no con ISR.** La tabla de 9.1 del documento de
+  arquitectura pide ISR en las dos, y es una desviación consciente: `EncabezadoSitio` lee la
+  sesión del lado del servidor para todo el layout público —email, acceso al dashboard, link de
+  admin según el rol— y eso vuelve dinámica cualquier ruta que lo use. No es un problema de esas
+  páginas: cachearlas exigiría resolver la sesión en el cliente en **todas**, y con eso el
+  encabezado mostraría un instante el estado deslogueado en cada carga del sitio. Se prefirió no
+  pagar ese parpadeo con el volumen que tiene el proyecto.
+
+  Lo que ya se hizo es dejar el camino abierto: el estado de favoritos y el contador de visitas
+  salieron del render (`FavoritosProvider` y `RegistrarVista`), que eran los otros dos motivos
+  por los que esas páginas no podían cachearse. El día que el encabezado se mueva al cliente,
+  alcanza con declarar `revalidate` en cada página.
+
 - **Un reseteo de contraseña no invalida las sesiones ya abiertas.** Con estrategia JWT la
   sesión no se consulta contra la base en cada request, así que un token emitido antes del
   cambio sigue siendo válido hasta que expira. Va junto con la rotación de JWT al cambiar de rol
@@ -316,6 +373,13 @@ invalida los anteriores del mismo tipo.
 - **`legacy-peer-deps=true` en `.npmrc`.** Es un conflicto entre peers opcionales de
   `@hookform/resolvers` y `@typeschema/valibot` que no involucra ningún paquete que el proyecto
   importe. Se puede quitar cuando upstream lo resuelva.
-- **Avisos de `npm audit`.** Los que quedan son transitivos de tooling de desarrollo (ReDoS en
-  `minimatch`/`brace-expansion` vía ESLint, `postcss`/`sharp` vía Next). No hay camino desde
-  una request de producción hasta ellos, y el `--force` degradaría Prisma a una versión anterior.
+- **Avisos de `npm audit`.** Los que tocaban producción se resolvieron con `overrides` en
+  `package.json`: `postcss` y `sharp` llegaban pinneados por Next a versiones vulnerables, y
+  `@hono/node-server` entraba por el CLI de shadcn. Lo que propone `npm audit fix --force` para
+  esos tres es **bajar Next a la 9.3.3**, que es peor que el problema; el override los sube sin
+  tocar Next.
+
+  Quedan 9 avisos, todos la misma cadena: `minimatch`/`brace-expansion` vía ESLint y sus
+  plugins. Resolverlos exige ESLint 10, que es un major y arrastra a `eslint-config-next`. Son
+  ReDoS y DoS en herramientas que corren en la máquina del desarrollador y en CI sobre código
+  propio: no hay camino desde una request de producción hasta ellos.

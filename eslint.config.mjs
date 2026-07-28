@@ -2,6 +2,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import prettier from "eslint-config-prettier";
+import regexp from "eslint-plugin-regexp";
 
 /**
  * Límites de arquitectura como reglas de lint.
@@ -187,6 +188,28 @@ const eslintConfig = defineConfig([
     // Código generado por Prisma: no se lintea.
     "src/generated/**",
   ]),
+
+  {
+    // ReDoS (8.22) como regla y no como convención, igual que los límites de capas de arriba.
+    //
+    // La sección dice "cualquier regex custom se prueba contra un input adversarial largo antes
+    // de mergear". Eso depende de que alguien se acuerde; esto no. El analizador detecta el
+    // backtracking super-lineal —los `(a+)+` de manual— leyendo el patrón, sin ejecutarlo.
+    //
+    // Hoy el proyecto no tiene ninguna regex problemática (son todas clases de un solo carácter
+    // sin cuantificadores anidados); la regla existe para que la primera que lo sea no entre.
+    name: "prop2/redos",
+    files: ["src/**/*.{ts,tsx}", "scripts/**/*.ts"],
+    plugins: { regexp },
+    rules: {
+      "regexp/no-super-linear-backtracking": "error",
+      "regexp/no-super-linear-move": "error",
+      // Un cuantificador dentro de otro es la forma canónica del problema. Se marca aparte
+      // porque puede ser exponencial incluso cuando el analizador de arriba no lo prueba.
+      "regexp/no-potentially-useless-backreference": "error",
+      "regexp/optimal-quantifier-concatenation": "error",
+    },
+  },
 
   {
     name: "prop2/reglas-generales",

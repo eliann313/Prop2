@@ -14,6 +14,7 @@ import { consumirIntento } from "@/shared/lib/rateLimiters";
 import { urlAbsoluta } from "@/shared/lib/urlBase";
 import { RUTAS } from "@/shared/rutas";
 import { exito, fallo, type ResultadoAccion } from "@/shared/types/resultadoAccion";
+import { rutaDePublicacion } from "@/shared/utils/slug";
 
 /**
  * Envía una consulta al vendedor de una publicación (6.6).
@@ -67,7 +68,9 @@ export async function enviarConsulta(entrada: unknown): Promise<ResultadoAccion>
     medioContacto: "formulario",
   });
 
-  const urlPublicacion = urlAbsoluta(`${RUTAS.publicaciones}/${destino.id}`);
+  const urlPublicacion = urlAbsoluta(
+    `${RUTAS.publicaciones}/${rutaDePublicacion(destino.id, destino.titulo)}`,
+  );
 
   await enviarEmail({
     para: destino.usuario.email,

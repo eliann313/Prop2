@@ -9,6 +9,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { RUTAS } from "@/shared/rutas";
 import { formatearFecha } from "@/shared/utils/formato";
+import { rutaDePublicacion } from "@/shared/utils/slug";
 
 export const metadata: Metadata = { title: "Moderar publicaciones" };
 
@@ -72,7 +73,7 @@ export default async function PaginaModeracion(props: PageProps<"/admin/publicac
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="grid gap-1">
                     <Link
-                      href={`${RUTAS.publicaciones}/${publicacion.id}`}
+                      href={`${RUTAS.publicaciones}/${rutaDePublicacion(publicacion.id, publicacion.titulo)}`}
                       className="font-medium underline underline-offset-4"
                     >
                       {publicacion.titulo}

@@ -28,6 +28,14 @@ const password = z
   .refine((valor) => /[a-zA-Z]/.test(valor), "Incluí al menos una letra")
   .refine((valor) => /[0-9]/.test(valor), "Incluí al menos un número");
 
+/**
+ * Contraseña presente en filtraciones públicas (8.17). El chequeo NO puede vivir en el schema
+ * —es una llamada de red y estos schemas corren también en el cliente—, pero el mensaje sí,
+ * para que el registro y el reseteo respondan exactamente lo mismo.
+ */
+export const MENSAJE_PASSWORD_FILTRADA =
+  "Esa contraseña aparece en filtraciones públicas de otros sitios. Elegí una distinta.";
+
 export const schemaRegistro = z.object({
   nombre: z
     .string()

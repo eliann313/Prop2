@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { ETIQUETAS_TIPO_INMUEBLE } from "@/shared/catalogoInmuebles";
 import { Badge } from "@/shared/components/ui/badge";
 import { Card, CardContent } from "@/shared/components/ui/card";
+import { RUTAS } from "@/shared/rutas";
 import { cn } from "@/shared/utils/cn";
 import {
   formatearEquivalencia,
@@ -12,6 +13,7 @@ import {
   formatearSuperficie,
   type Cotizacion,
 } from "@/shared/utils/formato";
+import { rutaDePublicacion } from "@/shared/utils/slug";
 
 // Vive en shared/ y no en una feature porque la usan tres: la búsqueda, los favoritos y las
 // "propiedades similares" del detalle (6.3/6.4/6.5). Es la tarjeta PÚBLICA — la del dashboard
@@ -84,7 +86,7 @@ export function TarjetaDePublicacion({
       ) : null}
 
       <Link
-        href={`/publicaciones/${publicacion.id}`}
+        href={`${RUTAS.publicaciones}/${rutaDePublicacion(publicacion.id, publicacion.titulo)}`}
         className={cn("grid gap-3", noDisponible && "opacity-60")}
       >
         <div className="bg-muted relative aspect-[4/3] w-full overflow-hidden">

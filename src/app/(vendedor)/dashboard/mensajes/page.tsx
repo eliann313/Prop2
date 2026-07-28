@@ -7,6 +7,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { RUTAS } from "@/shared/rutas";
 import { formatearFecha } from "@/shared/utils/formato";
+import { rutaDePublicacion } from "@/shared/utils/slug";
 
 export const metadata: Metadata = { title: "Consultas recibidas" };
 
@@ -38,7 +39,7 @@ export default async function PaginaMensajes() {
                   </span>
                 </div>
                 <Link
-                  href={`${RUTAS.publicaciones}/${mensaje.publicacion.id}`}
+                  href={`${RUTAS.publicaciones}/${rutaDePublicacion(mensaje.publicacion.id, mensaje.publicacion.titulo)}`}
                   className="text-muted-foreground text-sm underline underline-offset-4"
                 >
                   {mensaje.publicacion.titulo}

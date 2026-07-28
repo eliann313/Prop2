@@ -44,6 +44,16 @@ const limitadores = {
   // vendedor generando en loop se la gasta para todos. Diez por hora alcanza de sobra para
   // publicar varios inmuebles probando un par de versiones de cada descripción.
   ia: crearLimitador("ia", 10, "1 h"),
+  // Listado de búsqueda (8.10). No es antifraude sino "DoS económico": cada carga dispara una
+  // query full-text con filtros contra Neon, y un loop la repite miles de veces por minuto
+  // hasta agotar el free tier del proyecto.
+  //
+  // El límite es holgado a propósito. Tiene que quedar MUY por encima del uso real, porque
+  // sobre este número corren tres cosas además de la persona: los prefetch que Next dispara
+  // sobre los links del paginador, las recargas al tocar cada filtro, y los buscadores, que en
+  // 9.1 se quiere que indexen justamente esta ruta. Un límite ajustado acá no frenaría un
+  // ataque mejor, pero sí podría devolverle un 429 a Googlebot.
+  busqueda: crearLimitador("busqueda", 120, "1 m"),
 } as const;
 
 export type NombreLimitador = keyof typeof limitadores;
