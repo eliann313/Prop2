@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { obtenerUsuarioActual } from "@/features/auth/sessionQueries";
 import { FormularioDeConsulta } from "@/features/contacto/components/FormularioDeConsulta";
@@ -14,6 +14,10 @@ import {
   incrementarVistas,
   publicacionesSimilares,
 } from "@/features/publicaciones/publicacionRepository";
+import {
+  datosEstructuradosDePublicacion,
+  serializarJsonLd,
+} from "@/features/publicaciones/services/datosEstructurados";
 import {
   ETIQUETAS_ESTADO_INMUEBLE,
   ETIQUETAS_ORIENTACION,
@@ -32,6 +36,7 @@ import {
   formatearPrecio,
   formatearSuperficie,
 } from "@/shared/utils/formato";
+import { idDeRuta, rutaDePublicacion } from "@/shared/utils/slug";
 import { linkDeWhatsapp } from "@/shared/utils/whatsapp";
 
 // Leaflet toca `window` al construirse, así que el mapa no puede renderizarse en el servidor.
@@ -47,26 +52,69 @@ const MapaDeUbicacion = dynamic(
 export async function generateMetadata(
   props: PageProps<"/publicaciones/[id]">,
 ): Promise<Metadata> {
-  const { id } = await props.params;
-  const publicacion = await buscarPublicacionPublica(id);
+  const { id: segmento } = await props.params;
+  const id = idDeRuta(segmento);
+  const publicacion = id ? await buscarPublicacionPublica(id) : null;
 
   if (!publicacion) return { title: "Publicación no encontrada" };
 
+  // Los primeros 160 caracteres de la descripción del vendedor: es texto real sobre el
+  // inmueble, mejor que una plantilla armada con los campos.
+  const descripcion = publicacion.descripcion.slice(0, 160);
+  const url = urlAbsoluta(
+    `${RUTAS.publicaciones}/${rutaDePublicacion(publicacion.id, publicacion.titulo)}`,
+  );
+  const portada = publicacion.imagenes[0];
+
   return {
     title: publicacion.titulo,
-    // Los primeros 160 caracteres de la descripción del vendedor: es texto real sobre el
-    // inmueble, mejor que una plantilla armada con los campos.
-    description: publicacion.descripcion.slice(0, 160),
+    description: descripcion,
+    // Canónica explícita: la misma publicación es alcanzable con cualquier slug viejo (ver
+    // slug.ts), y sin esto Google vería varias URLs con el mismo contenido y repartiría la
+    // señal entre todas en vez de concentrarla en una.
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      title: publicacion.titulo,
+      description: descripcion,
+      url,
+      siteName: "Prop²",
+      locale: "es_AR",
+      // La preview de WhatsApp es lo que decide si alguien abre el link o lo pasa de largo, y
+      // WhatsApp es el canal de contacto principal (6.6). Sin imagen propia, compartir un
+      // inmueble muestra una tarjeta genérica del sitio en vez de la foto de la propiedad.
+      images: portada ? [{ url: portada.url, alt: publicacion.titulo }] : undefined,
+    },
+    twitter: {
+      card: portada ? "summary_large_image" : "summary",
+      title: publicacion.titulo,
+      description: descripcion,
+      images: portada ? [portada.url] : undefined,
+    },
   };
 }
 
 export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id]">) {
-  const { id } = await props.params;
+  const { id: segmento } = await props.params;
+
+  // La URL trae `<slug>-<uuid>`, pero lo único que identifica es el UUID del final. Sin uuid
+  // no hay nada que buscar: se corta acá en vez de ir a la base con un valor inventado.
+  const id = idDeRuta(segmento);
+  if (!id) notFound();
+
   const publicacion = await buscarPublicacionPublica(id);
 
   // 404 y no un mensaje de "no disponible": una publicación pausada o eliminada no debería
   // confirmarle a nadie que ese id existió alguna vez.
   if (!publicacion) notFound();
+
+  // Si el slug no es el que corresponde al título actual —link viejo, o el UUID pelado— se
+  // redirige a la forma canónica con un 308. Es permanente a propósito: le dice al buscador
+  // que consolide la señal en esta URL en vez de tratarlas como dos páginas distintas.
+  const rutaCanonica = `${RUTAS.publicaciones}/${rutaDePublicacion(publicacion.id, publicacion.titulo)}`;
+  if (segmento !== rutaDePublicacion(publicacion.id, publicacion.titulo)) {
+    permanentRedirect(rutaCanonica);
+  }
 
   const cotizacion = await obtenerCotizacion();
   const precio = Number(publicacion.precio);
@@ -90,7 +138,7 @@ export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id
   const whatsapp = linkDeWhatsapp(
     publicacion.usuario.telefono,
     publicacion.titulo,
-    urlAbsoluta(`${RUTAS.publicaciones}/${publicacion.id}`),
+    urlAbsoluta(rutaCanonica),
   );
 
   const ficha = [
@@ -146,8 +194,42 @@ export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id
     .map((fila) => fila.caracteristica)
     .filter((c) => c.categoria === "comodidad");
 
+  const jsonLd = datosEstructuradosDePublicacion(
+    {
+      titulo: publicacion.titulo,
+      descripcion: publicacion.descripcion,
+      precio,
+      moneda,
+      operacion: publicacion.operacion,
+      tipoInmueble: publicacion.tipoInmueble,
+      provincia: publicacion.provincia,
+      ciudad: publicacion.ciudad,
+      barrio: publicacion.barrio,
+      direccion: publicacion.direccion,
+      latitud: Number(publicacion.latitud),
+      longitud: Number(publicacion.longitud),
+      superficieCubierta: publicacion.superficieCubierta
+        ? Number(publicacion.superficieCubierta)
+        : null,
+      ambientes: publicacion.ambientes,
+      dormitorios: publicacion.dormitorios,
+      banios: publicacion.banios,
+      imagenes: publicacion.imagenes.map((imagen) => imagen.url),
+    },
+    urlAbsoluta(rutaCanonica),
+  );
+
+  const htmlJsonLd = { __html: serializarJsonLd(jsonLd) };
+
   return (
     <article className="grid gap-8">
+      {/* JSON-LD de 9.1. Es el único `dangerouslySetInnerHTML` del proyecto y la excepción que
+          contempla 8.1: un `<script>` no puede recibir su contenido como children de React,
+          porque React escaparía las comillas a entidades y el JSON dejaría de parsear.
+          El contenido va por `serializarJsonLd`, que neutraliza el `</script>` que un vendedor
+          podría meter en el título — ver el porqué en datosEstructurados.ts. */}
+      {/* eslint-disable-next-line react/no-danger -- ver comentario de arriba */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={htmlJsonLd} />
       <Link
         href={RUTAS.publicaciones}
         className="text-muted-foreground text-sm underline underline-offset-4"
@@ -261,7 +343,7 @@ export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id
             <BotonFavorito
               publicacionId={publicacion.id}
               esFavorito={esFavorito}
-              volverA={`${RUTAS.publicaciones}/${publicacion.id}`}
+              volverA={rutaCanonica}
               variante="linea"
             />
           </div>

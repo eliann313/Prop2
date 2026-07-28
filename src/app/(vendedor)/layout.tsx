@@ -5,6 +5,16 @@ import { EncabezadoSitio } from "@/shared/components/EncabezadoSitio";
  * página igual revalida con `requerirRol`: el proxy es una comprobación optimista sobre el
  * JWT, no la autorización real.
  */
+/**
+ * Sin cache, explícito (9.1): son datos privados de cada vendedor —sus publicaciones, sus
+ * mensajes— y nunca pueden servirse desde un cache compartido. Ver el comentario equivalente en
+ * el layout de admin.
+ */
+export const dynamic = "force-dynamic";
+
+/** El dashboard no aporta nada en un resultado de búsqueda (9.1 / robots.ts). */
+export const metadata = { robots: { index: false, follow: false } };
+
 export default function LayoutVendedor({ children }: { children: React.ReactNode }) {
   return (
     <>

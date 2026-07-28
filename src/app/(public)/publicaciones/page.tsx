@@ -23,7 +23,15 @@ import { Button } from "@/shared/components/ui/button";
 import { obtenerCotizacion } from "@/shared/lib/cotizacionDolar";
 import { RUTAS } from "@/shared/rutas";
 
-export const metadata: Metadata = { title: "Buscar inmuebles" };
+export const metadata: Metadata = {
+  title: "Buscar inmuebles",
+  description:
+    "Buscá casas, departamentos, PH y terrenos en venta o alquiler en toda Argentina. Filtrá por zona, precio, ambientes y superficie.",
+  // La canónica apunta al listado SIN filtros: cada combinación de searchParams genera una URL
+  // distinta con contenido casi idéntico, y sin esto Google las trataría como miles de páginas
+  // separadas compitiendo entre sí. La que tiene que rankear es esta.
+  alternates: { canonical: RUTAS.publicaciones },
+};
 
 /** Solo los strings: los searchParams repetidos ya los resuelve parsearFiltros. */
 function aParametros(searchParams: Record<string, string | string[] | undefined>) {

@@ -324,6 +324,25 @@ export type PublicacionPublica = NonNullable<
   Awaited<ReturnType<typeof buscarPublicacionPublica>>
 >;
 
+/**
+ * Publicaciones que entran al sitemap (9.1).
+ *
+ * SOLO las activas, y el estado va en el WHERE por el mismo motivo que en la query de arriba:
+ * un sitemap que liste borradores o pausadas le está entregando a Google URLs que devuelven
+ * 404, y de paso filtra que esos ids existen.
+ *
+ * `select` acotado a lo que el sitemap necesita —el id para armar la URL y updatedAt para el
+ * `lastModified`— en vez del registro completo con sus 25+ campos: esto se recorre entero cada
+ * vez que se regenera.
+ */
+export function listarPublicacionesParaSitemap() {
+  return prisma.publicacion.findMany({
+    where: { estadoPublicacion: "activa" },
+    select: { id: true, titulo: true, updatedAt: true },
+    orderBy: { updatedAt: "desc" },
+  });
+}
+
 /** Cuántas similares se muestran: 6 llena dos filas de tres sin dejar huecos. */
 const SIMILARES = 6;
 
