@@ -46,18 +46,36 @@ jobs:
 
       # Las cabeceras se inyectan acá y no en el JSON versionado: el secreto no puede quedar
       # committeado, y el resto de la config (los umbrales) sí conviene que se lea en el repo.
-      - name: Preparar la config con el bypass
+      - name: Preparar la config
         if: steps.bypass.outputs.hay == 'true'
         env:
           TOKEN: ${{ secrets.LIGHTHOUSE }}
+          ENTORNO: ${{ github.event.deployment_status.environment }}
         run: |
           node -e '
             const fs = require("node:fs");
             const config = JSON.parse(fs.readFileSync(".github/lighthouse/config.json", "utf8"));
+
+            // Las cabeceras se inyectan acá y no en el JSON versionado: el secreto no puede
+            // quedar committeado, y el resto de la config (los umbrales) sí conviene leerla
+            // en el repo.
             config.ci.collect.settings.extraHeaders = JSON.stringify({
               "x-vercel-protection-bypass": process.env.TOKEN,
               "x-vercel-set-bypass-cookie": "true",
             });
+
+            // En previews se saltea `is-crawlable`. Vercel les manda `X-Robots-Tag: noindex`,
+            // que es EXACTAMENTE lo que corresponde —un preview no debe indexarse—, pero
+            // Lighthouse lo cuenta como falla de SEO. La primera medición real dio 0.66 y 0.69
+            // por eso y solo por eso: era la única auditoría de la categoría que fallaba.
+            //
+            // Dejarlo puesto habría bloqueado cada PR con un número que parece un problema de
+            // SEO y no lo es. En producción SÍ se evalúa, que es donde la pregunta "¿esta
+            // página se puede indexar?" tiene sentido.
+            if (process.env.ENTORNO !== "Production") {
+              config.ci.collect.settings.skipAudits = ["is-crawlable"];
+            }
+
             fs.writeFileSync("lighthouserc.json", JSON.stringify(config, null, 2));
           '
 
