@@ -6,6 +6,7 @@ import { useOptimistic, useTransition } from "react";
 import { toast } from "sonner";
 
 import { alternarFavorito } from "@/features/favoritos/actions/alternarFavorito";
+import { useFavoritos } from "@/features/favoritos/components/FavoritosProvider";
 import { RUTAS } from "@/shared/rutas";
 import { cn } from "@/shared/utils/cn";
 
@@ -18,21 +19,20 @@ import { cn } from "@/shared/utils/cn";
 
 type Props = {
   publicacionId: string;
-  esFavorito: boolean;
   /** A dónde volver después de loguearse, si el visitante no tiene sesión. */
   volverA: string;
   /** En la tarjeta va flotando sobre la foto; en el detalle, en línea. */
   variante?: "flotante" | "linea";
 };
 
-export function BotonFavorito({
-  publicacionId,
-  esFavorito,
-  volverA,
-  variante = "flotante",
-}: Props) {
+export function BotonFavorito({ publicacionId, volverA, variante = "flotante" }: Props) {
   const router = useRouter();
   const [pendiente, iniciarTransicion] = useTransition();
+
+  // El estado ya no llega como prop desde el servidor: lo resuelve el provider después de
+  // montar, que es lo que permite cachear la home y el detalle (ver FavoritosProvider).
+  const { favoritos, cargando, marcar } = useFavoritos();
+  const esFavorito = favoritos.has(publicacionId);
   const [optimista, marcarOptimista] = useOptimistic(esFavorito);
 
   function alClickear() {
@@ -48,7 +48,12 @@ export function BotonFavorito({
           return;
         }
         toast.error(resultado.mensaje);
+        return;
       }
+
+      // El valor real lo dice el servidor, no el optimista: si dos pestañas tocan el mismo
+      // corazón, gana lo que quedó en la base y no lo que suponía esta.
+      marcar(publicacionId, resultado.datos?.esFavorito ?? !esFavorito);
     });
   }
 
@@ -56,7 +61,9 @@ export function BotonFavorito({
     <button
       type="button"
       onClick={alClickear}
-      disabled={pendiente}
+      // También mientras carga: dejar clickear antes de saber el estado real haría que el
+      // primer click "guarde" algo que ya estaba guardado, y lo quite sin querer.
+      disabled={pendiente || cargando}
       aria-pressed={optimista}
       aria-label={optimista ? "Quitar de favoritos" : "Guardar en favoritos"}
       className={cn(

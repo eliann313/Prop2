@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
-import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 
 import { obtenerUsuarioActual } from "@/features/auth/sessionQueries";
 import { FormularioDeConsulta } from "@/features/contacto/components/FormularioDeConsulta";
 import { BotonFavorito } from "@/features/favoritos/components/BotonFavorito";
-import { idsFavoritosDe } from "@/features/favoritos/favoritoRepository";
+import { FavoritosProvider } from "@/features/favoritos/components/FavoritosProvider";
 import { GaleriaDeFotos } from "@/features/publicaciones/components/GaleriaDeFotos";
+import { RegistrarVista } from "@/features/publicaciones/components/RegistrarVista";
 import {
   buscarPublicacionPublica,
-  incrementarVistas,
   publicacionesSimilares,
 } from "@/features/publicaciones/publicacionRepository";
 import {
@@ -27,7 +26,6 @@ import { TarjetaDePublicacion } from "@/shared/components/TarjetaDePublicacion";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
-import { esVisitaNueva } from "@/shared/lib/contadorDeVistas";
 import { obtenerCotizacion } from "@/shared/lib/cotizacionDolar";
 import { urlAbsoluta } from "@/shared/lib/urlBase";
 import { RUTAS } from "@/shared/rutas";
@@ -48,6 +46,10 @@ const MapaDeUbicacion = dynamic(
     ),
   { loading: () => <div className="bg-muted h-72 w-full rounded-lg" /> },
 );
+
+// TODO(9.1): falta declarar el ISR de 60 minutos. No se puede todavía, y no por esta página:
+// `EncabezadoSitio` lee la sesión en el servidor para TODO el layout público, y eso vuelve
+// dinámica cualquier ruta que lo use. Sacarlo de acá no alcanzaría. Ver la nota del README.
 
 export async function generateMetadata(
   props: PageProps<"/publicaciones/[id]">,
@@ -120,20 +122,11 @@ export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id
   const precio = Number(publicacion.precio);
   const moneda = publicacion.moneda;
 
-  // El contador se actualiza sin bloquear el render (ver incrementarVistas). El identificador
-  // sale de la IP: no hay sesión garantizada en una página pública.
-  const cabeceras = await headers();
-  const visitante = cabeceras.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonimo";
-  if (await esVisitaNueva(publicacion.id, visitante)) {
-    void incrementarVistas(publicacion.id).catch(() => {});
-  }
-
   const similares = await publicacionesSimilares(publicacion);
 
+  // Lo único que todavía lee la sesión en esta página: precargar el formulario de consulta
+  // (6.6). Se mueve al cliente junto con el encabezado cuando se cierre lo del ISR.
   const usuario = await obtenerUsuarioActual();
-  const esFavorito = usuario
-    ? (await idsFavoritosDe(usuario.id, [publicacion.id])).has(publicacion.id)
-    : false;
 
   const whatsapp = linkDeWhatsapp(
     publicacion.usuario.telefono,
@@ -222,203 +215,205 @@ export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id
   const htmlJsonLd = { __html: serializarJsonLd(jsonLd) };
 
   return (
-    <article className="grid gap-8">
-      {/* JSON-LD de 9.1. Es el único `dangerouslySetInnerHTML` del proyecto y la excepción que
+    <FavoritosProvider idsEnPagina={[publicacion.id, ...similares.map((s) => s.id)]}>
+      <article className="grid gap-8">
+        <RegistrarVista publicacionId={publicacion.id} />
+        {/* JSON-LD de 9.1. Es el único `dangerouslySetInnerHTML` del proyecto y la excepción que
           contempla 8.1: un `<script>` no puede recibir su contenido como children de React,
           porque React escaparía las comillas a entidades y el JSON dejaría de parsear.
           El contenido va por `serializarJsonLd`, que neutraliza el `</script>` que un vendedor
           podría meter en el título — ver el porqué en datosEstructurados.ts. */}
-      {/* eslint-disable-next-line react/no-danger -- ver comentario de arriba */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={htmlJsonLd} />
-      <Link
-        href={RUTAS.publicaciones}
-        className="text-muted-foreground text-sm underline underline-offset-4"
-      >
-        ← Volver a la búsqueda
-      </Link>
+        {/* eslint-disable-next-line react/no-danger -- ver comentario de arriba */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={htmlJsonLd} />
+        <Link
+          href={RUTAS.publicaciones}
+          className="text-muted-foreground text-sm underline underline-offset-4"
+        >
+          ← Volver a la búsqueda
+        </Link>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_320px] lg:items-start">
-        <div className="grid gap-6">
-          <GaleriaDeFotos
-            fotos={publicacion.imagenes.map((imagen) => ({
-              id: imagen.id,
-              url: imagen.url,
-              urlThumbnail: imagen.urlThumbnail,
-            }))}
-            titulo={publicacion.titulo}
-          />
-
-          <header className="grid gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">
-                {publicacion.operacion === "venta" ? "Venta" : "Alquiler"}
-              </Badge>
-              <Badge variant="outline">
-                {ETIQUETAS_TIPO_INMUEBLE[publicacion.tipoInmueble]}
-              </Badge>
-            </div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {publicacion.titulo}
-            </h1>
-            <p className="text-muted-foreground">
-              {/* La dirección exacta solo se muestra si el vendedor la habilitó (3.4). */}
-              {publicacion.direccion ? `${publicacion.direccion}, ` : ""}
-              {publicacion.barrio ? `${publicacion.barrio}, ` : ""}
-              {publicacion.ciudad}, {publicacion.provincia}
-            </p>
-          </header>
-
-          <Separator />
-
-          <section className="grid gap-3">
-            <h2 className="text-lg font-medium">Descripción</h2>
-            {/* whitespace-pre-line respeta los saltos de línea que escribió el vendedor sin
-                interpretar HTML: el texto entra como texto, nunca como markup (8.1). */}
-            <p className="max-w-prose text-sm whitespace-pre-line">
-              {publicacion.descripcion}
-            </p>
-          </section>
-
-          <section className="grid gap-3">
-            <h2 className="text-lg font-medium">Ficha técnica</h2>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
-              {ficha.map(([etiqueta, valor]) => (
-                <div key={String(etiqueta)} className="grid gap-0.5">
-                  <dt className="text-muted-foreground text-xs">{etiqueta}</dt>
-                  <dd className="font-medium">{valor}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-
-          <section className="grid gap-3">
-            <h2 className="text-lg font-medium">Ubicación</h2>
-            <MapaDeUbicacion
-              latitud={Number(publicacion.latitud)}
-              longitud={Number(publicacion.longitud)}
-              exacta={publicacion.direccion !== null}
-              etiqueta={publicacion.titulo}
+        <div className="grid gap-8 lg:grid-cols-[1fr_320px] lg:items-start">
+          <div className="grid gap-6">
+            <GaleriaDeFotos
+              fotos={publicacion.imagenes.map((imagen) => ({
+                id: imagen.id,
+                url: imagen.url,
+                urlThumbnail: imagen.urlThumbnail,
+              }))}
+              titulo={publicacion.titulo}
             />
-            {publicacion.direccion === null ? (
-              <p className="text-muted-foreground text-xs">
-                El vendedor eligió no publicar la dirección exacta: el mapa muestra la
-                zona.
-              </p>
-            ) : null}
-          </section>
 
-          {servicios.length + comodidades.length > 0 ? (
-            <section className="grid gap-3">
-              <h2 className="text-lg font-medium">Servicios y comodidades</h2>
-              <div className="flex flex-wrap gap-2">
-                {[...servicios, ...comodidades].map((caracteristica) => (
-                  <Badge key={caracteristica.nombre} variant="outline">
-                    {caracteristica.nombre}
-                  </Badge>
-                ))}
+            <header className="grid gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">
+                  {publicacion.operacion === "venta" ? "Venta" : "Alquiler"}
+                </Badge>
+                <Badge variant="outline">
+                  {ETIQUETAS_TIPO_INMUEBLE[publicacion.tipoInmueble]}
+                </Badge>
               </div>
-            </section>
-          ) : null}
-        </div>
-
-        <aside className="grid gap-4 rounded-lg border p-5 lg:sticky lg:top-6">
-          <div className="flex items-start justify-between gap-3">
-            <div className="grid gap-1">
-              <p className="text-2xl font-semibold">
-                {formatearPrecio(precio, moneda)}
-                {publicacion.operacion === "alquiler" ? (
-                  <span className="text-muted-foreground text-base font-normal">
-                    {" "}
-                    / mes
-                  </span>
-                ) : null}
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {publicacion.titulo}
+              </h1>
+              <p className="text-muted-foreground">
+                {/* La dirección exacta solo se muestra si el vendedor la habilitó (3.4). */}
+                {publicacion.direccion ? `${publicacion.direccion}, ` : ""}
+                {publicacion.barrio ? `${publicacion.barrio}, ` : ""}
+                {publicacion.ciudad}, {publicacion.provincia}
               </p>
-              {formatearEquivalencia(precio, moneda, cotizacion) ? (
-                <p className="text-muted-foreground text-sm">
-                  {formatearEquivalencia(precio, moneda, cotizacion)}
+            </header>
+
+            <Separator />
+
+            <section className="grid gap-3">
+              <h2 className="text-lg font-medium">Descripción</h2>
+              {/* whitespace-pre-line respeta los saltos de línea que escribió el vendedor sin
+                interpretar HTML: el texto entra como texto, nunca como markup (8.1). */}
+              <p className="max-w-prose text-sm whitespace-pre-line">
+                {publicacion.descripcion}
+              </p>
+            </section>
+
+            <section className="grid gap-3">
+              <h2 className="text-lg font-medium">Ficha técnica</h2>
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+                {ficha.map(([etiqueta, valor]) => (
+                  <div key={String(etiqueta)} className="grid gap-0.5">
+                    <dt className="text-muted-foreground text-xs">{etiqueta}</dt>
+                    <dd className="font-medium">{valor}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+
+            <section className="grid gap-3">
+              <h2 className="text-lg font-medium">Ubicación</h2>
+              <MapaDeUbicacion
+                latitud={Number(publicacion.latitud)}
+                longitud={Number(publicacion.longitud)}
+                exacta={publicacion.direccion !== null}
+                etiqueta={publicacion.titulo}
+              />
+              {publicacion.direccion === null ? (
+                <p className="text-muted-foreground text-xs">
+                  El vendedor eligió no publicar la dirección exacta: el mapa muestra la
+                  zona.
                 </p>
               ) : null}
+            </section>
+
+            {servicios.length + comodidades.length > 0 ? (
+              <section className="grid gap-3">
+                <h2 className="text-lg font-medium">Servicios y comodidades</h2>
+                <div className="flex flex-wrap gap-2">
+                  {[...servicios, ...comodidades].map((caracteristica) => (
+                    <Badge key={caracteristica.nombre} variant="outline">
+                      {caracteristica.nombre}
+                    </Badge>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
+
+          <aside className="grid gap-4 rounded-lg border p-5 lg:sticky lg:top-6">
+            <div className="flex items-start justify-between gap-3">
+              <div className="grid gap-1">
+                <p className="text-2xl font-semibold">
+                  {formatearPrecio(precio, moneda)}
+                  {publicacion.operacion === "alquiler" ? (
+                    <span className="text-muted-foreground text-base font-normal">
+                      {" "}
+                      / mes
+                    </span>
+                  ) : null}
+                </p>
+                {formatearEquivalencia(precio, moneda, cotizacion) ? (
+                  <p className="text-muted-foreground text-sm">
+                    {formatearEquivalencia(precio, moneda, cotizacion)}
+                  </p>
+                ) : null}
+              </div>
+
+              <BotonFavorito
+                publicacionId={publicacion.id}
+                volverA={rutaCanonica}
+                variante="linea"
+              />
             </div>
 
-            <BotonFavorito
-              publicacionId={publicacion.id}
-              esFavorito={esFavorito}
-              volverA={rutaCanonica}
-              variante="linea"
-            />
-          </div>
+            <Separator />
 
-          <Separator />
+            <div className="grid gap-1 text-sm">
+              <p className="text-muted-foreground text-xs">Publica</p>
+              <p className="font-medium">{publicacion.usuario.name ?? "Propietario"}</p>
+            </div>
 
-          <div className="grid gap-1 text-sm">
-            <p className="text-muted-foreground text-xs">Publica</p>
-            <p className="font-medium">{publicacion.usuario.name ?? "Propietario"}</p>
-          </div>
+            {whatsapp ? (
+              <Button asChild>
+                {/* rel noopener: sin esto la pestaña de WhatsApp puede tocar window.opener. */}
+                <a href={whatsapp} target="_blank" rel="noopener noreferrer">
+                  Consultar por WhatsApp
+                </a>
+              </Button>
+            ) : null}
 
-          {whatsapp ? (
-            <Button asChild>
-              {/* rel noopener: sin esto la pestaña de WhatsApp puede tocar window.opener. */}
-              <a href={whatsapp} target="_blank" rel="noopener noreferrer">
-                Consultar por WhatsApp
-              </a>
-            </Button>
-          ) : null}
-
-          {/* Email directo como tercera vía (6.6): quien prefiere su propio cliente de correo
+            {/* Email directo como tercera vía (6.6): quien prefiere su propio cliente de correo
               no debería estar obligado a usar el formulario. El mailto va contra el email de
               quien consulta, no contra el del vendedor: la dirección del vendedor nunca se
               publica en el HTML. */}
-          <div id="consultar" className="grid gap-3">
-            <p className="text-sm font-medium">Consultar por este inmueble</p>
-            <FormularioDeConsulta
-              publicacionId={publicacion.id}
-              tituloPublicacion={publicacion.titulo}
-              usuario={
-                usuario
-                  ? { nombre: usuario.name ?? "", email: usuario.email ?? "" }
-                  : null
-              }
-            />
-          </div>
-
-          <p className="text-muted-foreground text-xs">{publicacion.vistas} visitas</p>
-        </aside>
-      </div>
-
-      {similares.length > 0 ? (
-        <section className="grid gap-4 border-t pt-8">
-          <h2 className="text-xl font-semibold tracking-tight">
-            Publicaciones similares
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {similares.map((similar) => (
-              <TarjetaDePublicacion
-                key={similar.id}
-                publicacion={{
-                  id: similar.id,
-                  titulo: similar.titulo,
-                  precio: Number(similar.precio),
-                  moneda: similar.moneda,
-                  operacion: similar.operacion,
-                  tipoInmueble: similar.tipoInmueble,
-                  provincia: similar.provincia,
-                  ciudad: similar.ciudad,
-                  barrio: similar.barrio,
-                  ambientes: similar.ambientes,
-                  dormitorios: similar.dormitorios,
-                  banios: similar.banios,
-                  superficieCubierta: similar.superficieCubierta
-                    ? Number(similar.superficieCubierta)
-                    : null,
-                  imagenUrl: similar.imagenes[0]?.url ?? null,
-                  imagenThumbnail: similar.imagenes[0]?.urlThumbnail ?? null,
-                }}
-                cotizacion={cotizacion}
+            <div id="consultar" className="grid gap-3">
+              <p className="text-sm font-medium">Consultar por este inmueble</p>
+              <FormularioDeConsulta
+                publicacionId={publicacion.id}
+                tituloPublicacion={publicacion.titulo}
+                usuario={
+                  usuario
+                    ? { nombre: usuario.name ?? "", email: usuario.email ?? "" }
+                    : null
+                }
               />
-            ))}
-          </div>
-        </section>
-      ) : null}
-    </article>
+            </div>
+
+            <p className="text-muted-foreground text-xs">{publicacion.vistas} visitas</p>
+          </aside>
+        </div>
+
+        {similares.length > 0 ? (
+          <section className="grid gap-4 border-t pt-8">
+            <h2 className="text-xl font-semibold tracking-tight">
+              Publicaciones similares
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {similares.map((similar) => (
+                <TarjetaDePublicacion
+                  key={similar.id}
+                  publicacion={{
+                    id: similar.id,
+                    titulo: similar.titulo,
+                    precio: Number(similar.precio),
+                    moneda: similar.moneda,
+                    operacion: similar.operacion,
+                    tipoInmueble: similar.tipoInmueble,
+                    provincia: similar.provincia,
+                    ciudad: similar.ciudad,
+                    barrio: similar.barrio,
+                    ambientes: similar.ambientes,
+                    dormitorios: similar.dormitorios,
+                    banios: similar.banios,
+                    superficieCubierta: similar.superficieCubierta
+                      ? Number(similar.superficieCubierta)
+                      : null,
+                    imagenUrl: similar.imagenes[0]?.url ?? null,
+                    imagenThumbnail: similar.imagenes[0]?.urlThumbnail ?? null,
+                  }}
+                  cotizacion={cotizacion}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </article>
+    </FavoritosProvider>
   );
 }
