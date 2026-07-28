@@ -28,14 +28,18 @@ jobs:
       # El bypass se pasa como cabecera. Si el secreto no está cargado el job se saltea con un
       # aviso en vez de fallar: un check en rojo que nadie puede arreglar desde el código se
       # termina ignorando, y con él se ignoran los que sí importan.
+      # El secreto se llama LIGHTHOUSE porque es el nombre con el que está cargado en el repo,
+      # pero conviene saber QUÉ es: el Protection Bypass for Automation de Vercel. No tiene nada
+      # que ver con Lighthouse en sí — es una credencial que abre cualquier deployment protegido
+      # de este proyecto, y sirve igual para, por ejemplo, correr los E2E contra un preview.
       - name: ¿Hay token para entrar al preview?
         id: bypass
         env:
-          TOKEN: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          TOKEN: ${{ secrets.LIGHTHOUSE }}
         run: |
           if [ -z "$TOKEN" ]; then
             echo "hay=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Falta VERCEL_AUTOMATION_BYPASS_SECRET. Se saltea la medición: sin ese token Lighthouse mide la pantalla de login de Vercel, no la app. Se saca de Vercel → Project Settings → Deployment Protection → Protection Bypass for Automation."
+            echo "::notice::Falta el secreto LIGHTHOUSE (el Protection Bypass for Automation de Vercel). Se saltea la medición: sin ese token Lighthouse mide la pantalla de login de Vercel, no la app. Se saca de Vercel → Project Settings → Deployment Protection → Protection Bypass for Automation."
           else
             echo "hay=true" >> "$GITHUB_OUTPUT"
           fi
@@ -45,7 +49,7 @@ jobs:
       - name: Preparar la config con el bypass
         if: steps.bypass.outputs.hay == 'true'
         env:
-          TOKEN: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          TOKEN: ${{ secrets.LIGHTHOUSE }}
         run: |
           node -e '
             const fs = require("node:fs");
