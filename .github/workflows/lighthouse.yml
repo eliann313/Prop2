@@ -1,0 +1,48 @@
+name: Lighthouse
+
+# Se dispara con el deployment_status de Vercel y no con el pull_request, por un motivo
+# concreto: medir rendimiento necesita la app CORRIENDO con datos reales, y el job de CI levanta
+# el build con una DATABASE_URL dummy que no se conecta a nada. La única URL servible es la del
+# preview deployment, y este evento es el que la trae ya lista (no hay que adivinar ni esperar).
+on:
+  deployment_status:
+
+permissions:
+  contents: read
+
+jobs:
+  medir:
+    name: Core Web Vitals
+    runs-on: ubuntu-latest
+    # Solo cuando el deploy terminó bien. El evento se emite también en "pending" y "failure", y
+    # correr Lighthouse contra una URL que todavía no responde da un 0 que no significa nada.
+    if: github.event.deployment_status.state == 'success'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Umbrales en .github/lighthouse/config.json. Qué bloquea y qué no es deliberado:
+      #
+      #   error → CLS, accesibilidad y SEO. Son propiedades del CÓDIGO y deterministas: una
+      #           imagen sin dimensiones, un contraste malo o un title faltante dan el mismo
+      #           resultado en cualquier máquina. Si empeoran, es porque el cambio los empeoró.
+      #
+      #   warn  → LCP, TBT y el score de performance. Dependen de la red y de cuán cargado esté
+      #           el runner compartido de GitHub. Hacerlos bloqueantes convierte el pipeline en
+      #           una lotería, y un CI que falla por azar se termina ignorando — que es peor que
+      #           no tenerlo.
+      #
+      # El objetivo declarado en 9.2 (LCP < 2.5s, CLS < 0.1) sigue siendo el mismo; lo que
+      # cambia es quién decide, y para LCP la decisión la toma una persona mirando el número.
+      - name: Medir home y listado
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            ${{ github.event.deployment_status.environment_url }}
+            ${{ github.event.deployment_status.environment_url }}/publicaciones
+          configPath: ./.github/lighthouse/config.json
+          # Tres corridas y se toma la mediana: una sola medición en un runner compartido tiene
+          # una varianza que hace que el mismo commit pase o falle según el humor de la máquina.
+          runs: 3
+          uploadArtifacts: true
+          temporaryPublicStorage: true

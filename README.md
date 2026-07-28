@@ -304,6 +304,19 @@ invalida los anteriores del mismo tipo.
 
 ## Deuda conocida
 
+- **La home y el detalle se sirven SSR, no con ISR.** La tabla de 9.1 del documento de
+  arquitectura pide ISR en las dos, y es una desviación consciente: `EncabezadoSitio` lee la
+  sesión del lado del servidor para todo el layout público —email, acceso al dashboard, link de
+  admin según el rol— y eso vuelve dinámica cualquier ruta que lo use. No es un problema de esas
+  páginas: cachearlas exigiría resolver la sesión en el cliente en **todas**, y con eso el
+  encabezado mostraría un instante el estado deslogueado en cada carga del sitio. Se prefirió no
+  pagar ese parpadeo con el volumen que tiene el proyecto.
+
+  Lo que ya se hizo es dejar el camino abierto: el estado de favoritos y el contador de visitas
+  salieron del render (`FavoritosProvider` y `RegistrarVista`), que eran los otros dos motivos
+  por los que esas páginas no podían cachearse. El día que el encabezado se mueva al cliente,
+  alcanza con declarar `revalidate` en cada página.
+
 - **Un reseteo de contraseña no invalida las sesiones ya abiertas.** Con estrategia JWT la
   sesión no se consulta contra la base en cada request, así que un token emitido antes del
   cambio sigue siendo válido hasta que expira. Va junto con la rotación de JWT al cambiar de rol

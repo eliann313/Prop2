@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 
@@ -10,9 +11,10 @@ import { FavoritosProvider } from "@/features/favoritos/components/FavoritosProv
 import { GaleriaDeFotos } from "@/features/publicaciones/components/GaleriaDeFotos";
 import { RegistrarVista } from "@/features/publicaciones/components/RegistrarVista";
 import {
-  buscarPublicacionPublica,
-  publicacionesSimilares,
-} from "@/features/publicaciones/publicacionRepository";
+  PublicacionesSimilares,
+  SimilaresCargando,
+} from "@/features/publicaciones/components/PublicacionesSimilares";
+import { buscarPublicacionPublica } from "@/features/publicaciones/publicacionRepository";
 import {
   datosEstructuradosDePublicacion,
   serializarJsonLd,
@@ -22,7 +24,6 @@ import {
   ETIQUETAS_ORIENTACION,
   ETIQUETAS_TIPO_INMUEBLE,
 } from "@/shared/catalogoInmuebles";
-import { TarjetaDePublicacion } from "@/shared/components/TarjetaDePublicacion";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
@@ -47,9 +48,16 @@ const MapaDeUbicacion = dynamic(
   { loading: () => <div className="bg-muted h-72 w-full rounded-lg" /> },
 );
 
-// TODO(9.1): falta declarar el ISR de 60 minutos. No se puede todavía, y no por esta página:
-// `EncabezadoSitio` lee la sesión en el servidor para TODO el layout público, y eso vuelve
-// dinámica cualquier ruta que lo use. Sacarlo de acá no alcanzaría. Ver la nota del README.
+// Esta página se sirve SSR y no con el ISR de 60 minutos que pide la tabla de 9.1. Es una
+// desviación decidida, no algo pendiente: `EncabezadoSitio` lee la sesión en el servidor para
+// todo el layout público —muestra el email, el acceso al dashboard y el link de admin según el
+// rol— y eso vuelve dinámica cualquier ruta que lo use. Cachear esta página exigiría resolver
+// la sesión en el cliente en TODAS, y eso hace que el encabezado muestre un instante el estado
+// deslogueado en cada carga del sitio. Se prefirió no pagar ese parpadeo.
+//
+// Lo que sí se hizo es dejar la puerta abierta: el corazón de favoritos y el contador de
+// visitas ya salieron del render (FavoritosProvider y RegistrarVista), así que el día que el
+// encabezado se mueva, acá alcanza con declarar `revalidate`. Ver el README.
 
 export async function generateMetadata(
   props: PageProps<"/publicaciones/[id]">,
@@ -121,8 +129,6 @@ export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id
   const cotizacion = await obtenerCotizacion();
   const precio = Number(publicacion.precio);
   const moneda = publicacion.moneda;
-
-  const similares = await publicacionesSimilares(publicacion);
 
   // Lo único que todavía lee la sesión en esta página: precargar el formulario de consulta
   // (6.6). Se mueve al cliente junto con el encabezado cuando se cierre lo del ISR.
@@ -214,8 +220,10 @@ export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id
 
   const htmlJsonLd = { __html: serializarJsonLd(jsonLd) };
 
+  // Al provider va solo el id de esta publicación: las tarjetas de "similares" no llevan
+  // corazón, y además llegan por streaming, así que acá todavía no se conocen.
   return (
-    <FavoritosProvider idsEnPagina={[publicacion.id, ...similares.map((s) => s.id)]}>
+    <FavoritosProvider idsEnPagina={[publicacion.id]}>
       <article className="grid gap-8">
         <RegistrarVista publicacionId={publicacion.id} />
         {/* JSON-LD de 9.1. Es el único `dangerouslySetInnerHTML` del proyecto y la excepción que
@@ -379,40 +387,12 @@ export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id
           </aside>
         </div>
 
-        {similares.length > 0 ? (
-          <section className="grid gap-4 border-t pt-8">
-            <h2 className="text-xl font-semibold tracking-tight">
-              Publicaciones similares
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {similares.map((similar) => (
-                <TarjetaDePublicacion
-                  key={similar.id}
-                  publicacion={{
-                    id: similar.id,
-                    titulo: similar.titulo,
-                    precio: Number(similar.precio),
-                    moneda: similar.moneda,
-                    operacion: similar.operacion,
-                    tipoInmueble: similar.tipoInmueble,
-                    provincia: similar.provincia,
-                    ciudad: similar.ciudad,
-                    barrio: similar.barrio,
-                    ambientes: similar.ambientes,
-                    dormitorios: similar.dormitorios,
-                    banios: similar.banios,
-                    superficieCubierta: similar.superficieCubierta
-                      ? Number(similar.superficieCubierta)
-                      : null,
-                    imagenUrl: similar.imagenes[0]?.url ?? null,
-                    imagenThumbnail: similar.imagenes[0]?.urlThumbnail ?? null,
-                  }}
-                  cotizacion={cotizacion}
-                />
-              ))}
-            </div>
-          </section>
-        ) : null}
+        {/* En Suspense: es la consulta mas cara de la pagina y la menos urgente (9.2). Sin
+            esto, la ficha del inmueble espera a que termine una busqueda de similares que
+            vive al final y fuera de la primera pantalla. */}
+        <Suspense fallback={<SimilaresCargando />}>
+          <PublicacionesSimilares publicacion={publicacion} cotizacion={cotizacion} />
+        </Suspense>
       </article>
     </FavoritosProvider>
   );
