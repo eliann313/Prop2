@@ -2,8 +2,8 @@ name: Lighthouse
 
 # Se dispara con el deployment_status de Vercel y no con el pull_request, por un motivo
 # concreto: medir rendimiento necesita la app CORRIENDO con datos reales, y el job de CI levanta
-# el build con una DATABASE_URL dummy que no se conecta a nada. La única URL servible es la del
-# preview deployment, y este evento es el que la trae ya lista (no hay que adivinar ni esperar).
+# el build contra un Postgres vacío. La única URL servible es la del preview deployment, y este
+# evento es el que la trae ya lista (no hay que adivinar ni esperar).
 on:
   deployment_status:
 
@@ -21,6 +21,42 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Los previews de este proyecto tienen Deployment Protection activada: sin credenciales, la
+      # URL responde con la pantalla de login de Vercel. La primera corrida de este workflow lo
+      # demostró midiendo `vercel.com/login` y reportando un SEO de 0.82 que no era el de la app.
+      #
+      # El bypass se pasa como cabecera. Si el secreto no está cargado el job se saltea con un
+      # aviso en vez de fallar: un check en rojo que nadie puede arreglar desde el código se
+      # termina ignorando, y con él se ignoran los que sí importan.
+      - name: ¿Hay token para entrar al preview?
+        id: bypass
+        env:
+          TOKEN: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "hay=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Falta VERCEL_AUTOMATION_BYPASS_SECRET. Se saltea la medición: sin ese token Lighthouse mide la pantalla de login de Vercel, no la app. Se saca de Vercel → Project Settings → Deployment Protection → Protection Bypass for Automation."
+          else
+            echo "hay=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Las cabeceras se inyectan acá y no en el JSON versionado: el secreto no puede quedar
+      # committeado, y el resto de la config (los umbrales) sí conviene que se lea en el repo.
+      - name: Preparar la config con el bypass
+        if: steps.bypass.outputs.hay == 'true'
+        env:
+          TOKEN: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const config = JSON.parse(fs.readFileSync(".github/lighthouse/config.json", "utf8"));
+            config.ci.collect.settings.extraHeaders = JSON.stringify({
+              "x-vercel-protection-bypass": process.env.TOKEN,
+              "x-vercel-set-bypass-cookie": "true",
+            });
+            fs.writeFileSync("lighthouserc.json", JSON.stringify(config, null, 2));
+          '
+
       # Umbrales en .github/lighthouse/config.json. Qué bloquea y qué no es deliberado:
       #
       #   error → CLS, accesibilidad y SEO. Son propiedades del CÓDIGO y deterministas: una
@@ -35,12 +71,13 @@ jobs:
       # El objetivo declarado en 9.2 (LCP < 2.5s, CLS < 0.1) sigue siendo el mismo; lo que
       # cambia es quién decide, y para LCP la decisión la toma una persona mirando el número.
       - name: Medir home y listado
+        if: steps.bypass.outputs.hay == 'true'
         uses: treosh/lighthouse-ci-action@v12
         with:
           urls: |
             ${{ github.event.deployment_status.environment_url }}
             ${{ github.event.deployment_status.environment_url }}/publicaciones
-          configPath: ./.github/lighthouse/config.json
+          configPath: ./lighthouserc.json
           # Tres corridas y se toma la mediana: una sola medición en un runner compartido tiene
           # una varianza que hace que el mismo commit pase o falle según el humor de la máquina.
           runs: 3

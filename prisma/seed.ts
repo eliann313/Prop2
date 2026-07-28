@@ -1,4 +1,5 @@
 import { PrismaNeon } from "@prisma/adapter-neon";
+import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 
 import { PrismaClient } from "../src/generated/prisma/client";
@@ -30,7 +31,17 @@ async function main() {
   // El seed corre por la conexión directa, igual que las migraciones: es un script puntual,
   // no se beneficia del pooler.
   const connectionString = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
-  const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString }) });
+
+  // Mismo criterio que shared/lib/prismaClient.ts: contra la base de tests (Postgres en Docker)
+  // hay que usar el adapter de `pg`, porque el de Neon habla WebSocket y un Postgres común no
+  // lo entiende. Sin esto el seed fallaba con un `ErrorEvent` vacío —el error de un WebSocket
+  // que no conecta— que no dice absolutamente nada sobre la causa real.
+  const adapter =
+    process.env.DB_DRIVER === "pg"
+      ? new PrismaPg({ connectionString })
+      : new PrismaNeon({ connectionString });
+
+  const prisma = new PrismaClient({ adapter });
 
   try {
     // upsert por slug y no createMany: el seed tiene que poder correrse muchas veces sobre

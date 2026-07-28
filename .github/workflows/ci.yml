@@ -25,12 +25,32 @@ jobs:
     name: Lint, tipos, tests y build
     runs-on: ubuntu-latest
 
+    # El build SÍ toca la base desde que existe `sitemap.ts` (9.1): es una ruta estática que
+    # consulta las publicaciones activas, así que Next la prerenderiza durante `next build`.
+    # Antes acá alcanzaba con una DATABASE_URL dummy porque ninguna query corría en build; ese
+    # supuesto dejó de valer y el build empezó a fallar con "Error occurred prerendering page
+    # /sitemap.xml".
+    #
+    # Se levanta un contenedor en vez de usar el secreto real de Neon: la propiedad que
+    # importaba —no exponer una credencial de producción en el pipeline— se mantiene igual.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: prop2
+          POSTGRES_PASSWORD: prop2
+          POSTGRES_DB: prop2_build
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U prop2 -d prop2_build"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+
     env:
-      # El build necesita que las variables existan y sean válidas (serverEnv.ts las valida al
-      # importarse), pero NO se conecta a la base: `next build` no ejecuta queries en este
-      # proyecto. Por eso alcanzan valores dummy y el CI no necesita el secreto real de Neon —
-      # una credencial menos expuesta en el pipeline.
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      DATABASE_URL: postgresql://prop2:prop2@localhost:5433/prop2_build
+      DB_DRIVER: pg
       AUTH_SECRET: valor-dummy-solo-para-que-el-build-de-ci-valide-el-entorno
       # Fuerza el mismo comportamiento de resolución de peers que en local (ver .npmrc).
       NPM_CONFIG_LEGACY_PEER_DEPS: "true"
@@ -65,6 +85,13 @@ jobs:
 
       - name: Tests unitarios
         run: npm test
+
+      # Las migraciones van antes del build porque el prerender del sitemap consulta la tabla
+      # `publicacion`: sin schema, la consulta falla y se cae el build entero.
+      - name: Migrar la base del build
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL_UNPOOLED: ${{ env.DATABASE_URL }}
 
       - name: Build
         run: npm run build
