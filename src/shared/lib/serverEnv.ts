@@ -17,6 +17,12 @@ const esquemaEnv = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL es obligatoria"),
   DATABASE_URL_UNPOOLED: z.string().optional(),
 
+  // Qué driver usa Prisma para hablar con Postgres. Solo se setea en tests, donde la base es
+  // un Postgres común en Docker que no entiende el protocolo de Neon (12.2). El enum es a
+  // propósito: un valor mal tipeado tiene que romper el arranque, no caer en silencio al
+  // adapter de Neon y dar un error de conexión indescifrable diez pasos más adelante.
+  DB_DRIVER: z.enum(["neon", "pg"]).optional(),
+
   AUTH_SECRET: z.string().min(1, "AUTH_SECRET es obligatoria (npx auth secret)"),
   AUTH_URL: z.url().optional(),
 

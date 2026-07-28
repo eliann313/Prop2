@@ -28,6 +28,10 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.test.{ts,tsx}"],
+    // Los de integración quedan afuera: necesitan Docker levantado y tienen su propia config
+    // (vitest.integration.config.mts). `npm test` es lo que se corre veinte veces por día y no
+    // puede depender de tener un contenedor arriba.
+    exclude: ["tests/integration/**"],
     coverage: {
       provider: "v8",
       // Se mide cobertura sobre el código propio: el generado por Prisma y los primitivos de

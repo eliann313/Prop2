@@ -1,0 +1,42 @@
+# Base de datos para los tests de integración y E2E (12.2 / 12.3).
+#
+# La sección 12.2 propone un branch dedicado de Neon. Se usa Docker en su lugar por tres
+# motivos concretos: en CI, GitHub Actions levanta este contenedor de forma nativa y el
+# "reseteo antes de cada corrida" sale gratis porque el contenedor nace vacío; no hace falta
+# una credencial de Neon en el pipeline; y no depende de la cuenta de nadie para correr en local.
+#
+# La fidelidad con producción está verificada, no asumida: Neon corre PostgreSQL 17.10 con
+# `plpgsql` y `unaccent`, y las dos están en esta imagen. `unaccent` no es un detalle —el
+# índice full-text y la función `sin_acentos()` de la migración dependen de ella, así que sobre
+# una imagen sin contrib la búsqueda directamente no se podría testear.
+#
+# Lo que esto NO cubre, y conviene tenerlo claro: el pooler de Neon y su driver serverless. Un
+# problema propio de ese transporte (como el P1001 por IPv6 que ya apareció una vez) no lo
+# atrapa ningún test de acá — es un problema de deploy, no de lógica.
+
+services:
+  postgres-test:
+    image: postgres:17-alpine
+    container_name: prop2-postgres-test
+    environment:
+      POSTGRES_USER: prop2
+      POSTGRES_PASSWORD: prop2
+      POSTGRES_DB: prop2_test
+    ports:
+      # 5433 y no 5432: si alguien tiene un Postgres propio en el puerto default, esto no se lo
+      # pisa ni falla al levantar.
+      - "5433:5432"
+    # Sin volumen a propósito. Los datos NO deben sobrevivir al contenedor: una corrida de tests
+    # tiene que empezar siempre desde el mismo estado, y un volumen persistente convierte un
+    # test que dejó basura en un fallo intermitente tres días después.
+    tmpfs:
+      # El directorio de datos en memoria: los tests hacen muchas escrituras chicas y el disco
+      # es el cuello de botella. Se puede perder todo sin consecuencias, que es el punto.
+      - /var/lib/postgresql/data
+    healthcheck:
+      # Los scripts esperan a que esto pase antes de migrar: sin el healthcheck, `migrate deploy`
+      # corre contra un Postgres que todavía está inicializando y falla con "connection refused".
+      test: ["CMD-SHELL", "pg_isready -U prop2 -d prop2_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 15

@@ -69,6 +69,64 @@ jobs:
       - name: Build
         run: npm run build
 
+  # Job aparte del de lint/tipos/unit: estos necesitan una base de datos real y tardan más. Si
+  # el build se rompe, se ve enseguida sin esperar a que Postgres arranque.
+  integracion:
+    name: Tests de integración
+    runs-on: ubuntu-latest
+
+    # 12.2 propone un branch dedicado de Neon. Se usa un contenedor: el "reseteo antes de cada
+    # corrida" sale gratis porque el servicio nace vacío en cada job, y no hace falta una
+    # credencial de Neon en el pipeline. La versión sigue a la de producción (Neon corre 17.10)
+    # y la imagen trae `unaccent`, del que dependen el índice full-text y `sin_acentos()`.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: prop2
+          POSTGRES_PASSWORD: prop2
+          POSTGRES_DB: prop2_test
+        ports:
+          - 5433:5432
+        # Sin esto los pasos arrancan contra un Postgres que todavía inicializa: el clásico
+        # fallo intermitente que depende de lo cargado que esté el runner.
+        options: >-
+          --health-cmd "pg_isready -U prop2 -d prop2_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+
+    env:
+      DATABASE_URL_TEST: postgresql://prop2:prop2@localhost:5433/prop2_test
+      AUTH_SECRET: valor-dummy-solo-para-que-el-build-de-ci-valide-el-entorno
+      NPM_CONFIG_LEGACY_PEER_DEPS: "true"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Generar cliente de Prisma
+        run: npm run db:generate
+
+      # Solo migraciones y seed: el contenedor ya lo levantó `services`, así que el paso de
+      # docker compose del script local acá no corresponde.
+      - name: Preparar la base
+        run: npx prisma migrate deploy && npx tsx prisma/seed.ts
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL_TEST }}
+          DATABASE_URL_UNPOOLED: ${{ env.DATABASE_URL_TEST }}
+          DB_DRIVER: pg
+
+      - name: Tests de integración
+        run: npm run test:integration
+
   # Job aparte y no un paso más del anterior: no depende de instalar nada y su resultado se lee
   # solo, sin bucear en el log de un job que hace otras cinco cosas.
   dependencias:
