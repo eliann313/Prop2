@@ -1,7 +1,8 @@
 import NextAuth from "next-auth";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 import { authJsOptions } from "@/features/auth/authJsOptions";
+import { consumirIntento } from "@/shared/lib/rateLimiters";
 import { RUTAS } from "@/shared/rutas";
 
 // En Next.js 16 esto es `proxy.ts`, no `middleware.ts`: la convención se renombró para dejar
@@ -31,9 +32,38 @@ const RUTAS_PROTEGIDAS: { prefijo: string; roles?: readonly string[] }[] = [
 /** Páginas de auth: si ya hay sesión, no tiene sentido mostrarlas. */
 const RUTAS_SOLO_ANONIMOS: readonly string[] = [RUTAS.login, RUTAS.registro];
 
-export const proxy = auth((request) => {
+/**
+ * Limita el listado de búsqueda por IP (8.10).
+ *
+ * Va acá y no en la página porque es exactamente lo que el proxy es: capa de red. Y solo sobre
+ * el listado, no sobre el detalle — el detalle se sirve por id y es cacheable, el listado
+ * arma una query distinta por combinación de filtros.
+ *
+ * Devuelve `null` cuando se puede seguir. Nunca lanza: si Upstash no contesta, `consumirIntento`
+ * ya deja pasar (misma decisión deliberada que en el login).
+ */
+async function limitarBusqueda(request: NextRequest): Promise<NextResponse | null> {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonimo";
+  const { permitido, reintentarEnSegundos } = await consumirIntento("busqueda", ip);
+  if (permitido) return null;
+
+  // 429 con Retry-After y no una página de error: un cliente automático entiende la cabecera, y
+  // un buscador la interpreta como "volvé más tarde" en vez de como una URL rota.
+  return new NextResponse("Demasiadas búsquedas seguidas.", {
+    status: 429,
+    headers: { "Retry-After": String(reintentarEnSegundos) },
+  });
+}
+
+export const proxy = auth(async (request) => {
   const { pathname, search } = request.nextUrl;
   const sesion = request.auth;
+
+  // Antes que la lógica de sesión: el listado es público y no depende de estar logueado.
+  if (pathname === RUTAS.publicaciones) {
+    const respuesta = await limitarBusqueda(request);
+    if (respuesta) return respuesta;
+  }
 
   if (sesion && RUTAS_SOLO_ANONIMOS.some((ruta) => pathname.startsWith(ruta))) {
     return NextResponse.redirect(new URL(RUTAS.dashboard, request.nextUrl));

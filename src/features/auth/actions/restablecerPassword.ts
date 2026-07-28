@@ -1,6 +1,9 @@
 "use server";
 
-import { schemaRestablecerPassword } from "@/features/auth/authSchemas";
+import {
+  MENSAJE_PASSWORD_FILTRADA,
+  schemaRestablecerPassword,
+} from "@/features/auth/authSchemas";
 import { hashearPassword } from "@/features/auth/services/passwordService";
 import {
   estaVencido,
@@ -14,6 +17,7 @@ import {
   actualizarPasswordHash,
   marcarEmailVerificado,
 } from "@/features/usuarios/usuarioRepository";
+import { estaEnFiltraciones } from "@/shared/lib/passwordsFiltradas";
 import { exito, fallo, type ResultadoAccion } from "@/shared/types/resultadoAccion";
 
 /** Última rama del flujo de 5.1: el usuario define una contraseña nueva con el token del email. */
@@ -40,6 +44,15 @@ export async function restablecerPassword(entrada: unknown): Promise<ResultadoAc
     return fallo(
       "El link no es válido o venció. Pedí uno nuevo desde “Olvidé mi contraseña”.",
     );
+  }
+
+  // El chequeo va ANTES de consumir el token, no después: el token es de un solo uso, así que
+  // rechazar la contraseña una vez gastado dejaría a la persona con el link quemado y obligada
+  // a pedir otro por email solo por haber elegido mal la contraseña.
+  if (await estaEnFiltraciones(password)) {
+    return fallo(MENSAJE_PASSWORD_FILTRADA, {
+      password: [MENSAJE_PASSWORD_FILTRADA],
+    });
   }
 
   // Consumir el token primero: si dos requests llegan juntas, solo una cambia la contraseña.

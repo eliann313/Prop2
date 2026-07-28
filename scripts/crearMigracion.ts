@@ -32,7 +32,11 @@ const nombre = nombreCrudo
   .trim()
   .toLowerCase()
   .replace(/[^a-z0-9]+/g, "_")
-  .replace(/^_+|_+$/g, "");
+  // `_` y no `_+`: el replace de arriba colapsa cada corrida de caracteres no alfanuméricos en
+  // UN solo guion bajo, así que después de esa línea es imposible tener dos seguidos. El
+  // cuantificador no solo sobraba: hacía que la búsqueda del sufijo fuera cuadrática sobre una
+  // cadena larga de guiones bajos (8.22).
+  .replace(/^_|_$/g, "");
 
 if (!nombre) {
   console.error("El nombre no tiene caracteres usables.");
