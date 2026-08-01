@@ -1,385 +1,171 @@
-# Prop²
+# Prop² — Plataforma Inmobiliaria Full-Stack
 
-Plataforma de publicación, venta y alquiler de inmuebles en Argentina: los propietarios
-publican directamente y los interesados contactan sin intermediarios.
+Plataforma de publicación, venta y alquiler de inmuebles en Argentina: los propietarios publican directamente y los interesados contactan sin intermediarios.
 
-Proyecto de portfolio. La documentación de arquitectura completa (16 secciones: alcance, stack,
-modelo de datos, flujos, seguridad, SEO, roadmap por etapas, testing, DevOps) vive en Notion;
-este README cubre solo cómo levantar y trabajar el repo.
+> **Estado del Proyecto: V1 Completa (Etapas 0 a 5 finalizadas, Etapa 6 en cierre)**  
+> Infraestructura, modelo de datos relacional, autenticación end-to-end, CRUD de publicaciones con wizard de 4 pasos y geocoding, búsqueda pública combinada con mapa interactivo Leaflet/OSM, IA multiproveedor en cascada, panel de administración con moderación proactiva, hardening completo de seguridad (CSP, HIBP, ReDoS, Rate Limiting), SEO técnico dinámico y suite de testing automatizada (Vitest + Playwright E2E).
 
-**Estado: Etapas 0, 1 y 2 completas** — infraestructura, modelo de datos, autenticación
-end-to-end y CRUD de publicaciones con wizard, geocoding y fotos. La búsqueda pública es
-Etapa 3.
+---
 
-## Stack
+## 🛠️ Stack Tecnológico
 
-| Capa          | Elección                                           |
-| ------------- | -------------------------------------------------- |
-| Framework     | Next.js 16 (App Router) + React 19 + TypeScript    |
-| Base de datos | PostgreSQL en Neon                                 |
-| ORM           | Prisma 7 (driver adapter de Neon)                  |
-| Autenticación | Auth.js v5 — credenciales + Google OAuth           |
-| UI            | Tailwind CSS v4 + shadcn/ui (sobre Radix)          |
-| Validación    | Zod 4 + React Hook Form                            |
-| Emails        | Resend + React Email                               |
-| Imágenes      | Cloudinary (subida firmada, directa del navegador) |
-| Rate limiting | Upstash Redis + Ratelimit                          |
-| Tests         | Vitest + React Testing Library                     |
-| Deploy        | Vercel (Hobby)                                     |
+| Capa                       | Tecnología                                  | Justificación                                                                            |
+| :------------------------- | :------------------------------------------ | :--------------------------------------------------------------------------------------- |
+| **Framework Full-Stack**   | Next.js 16 (App Router) + React 19          | SSR/ISR nativo, Server Components, Server Actions y Route Handlers sin backend separado. |
+| **Lenguaje**               | TypeScript                                  | Tipado estricto end-to-end (cliente y servidor).                                         |
+| **Base de datos**          | PostgreSQL en Neon                          | Database serverless con branching gratuito.                                              |
+| **ORM**                    | Prisma 7 (Driver adapter de Neon)           | DX superior, migración versionada y tipado autogenerado.                                 |
+| **Autenticación**          | Auth.js v5 (NextAuth)                       | Self-hosted, gratis sin límite de usuarios, credenciales + Google OAuth.                 |
+| **Estilos & UI**           | Tailwind CSS v4 + shadcn/ui (Radix)         | Componentes accesibles, diseño responsivo sin dependencias pesadas.                      |
+| **Validaciones**           | Zod 4 + React Hook Form                     | Una sola fuente de verdad para schemas en cliente y servidor.                            |
+| **Imágenes**               | Cloudinary                                  | Subida firmada directa desde el navegador y transformaciones en tiempo real.             |
+| **Mapas & Geocoding**      | Leaflet + OpenStreetMap + Nominatim         | Mapa interactivo y geocodificación sin fricción de tarjeta de crédito ($0 costo real).   |
+| **IA (Multiproveedor)**    | Vercel AI SDK (Gemini / Groq / OpenRouter)  | Generación automática de descripciones con fallback en cascada desacoplado.              |
+| **Cache Efímero & Limits** | Upstash Redis + Ratelimit                   | Rate limiting por IP/usuario para login, contacto e IA.                                  |
+| **Emails**                 | Resend + React Email                        | Templates en componentes React con fallback de consola en dev.                           |
+| **Testing**                | Vitest + React Testing Library + Playwright | Unitarios, integración con Postgres real y E2E de flujos críticos.                       |
+| **Deploy & CI/CD**         | Vercel (Hobby) + GitHub Actions             | Deploy automático con preview deployments por PR y verificaciones en CI.                 |
 
-### Por qué `typescript` apunta a otro paquete
+---
 
-En `package.json` hay dos entradas que a primera vista parecen un error:
+## 🏛️ Arquitectura (Screaming Architecture + Capas Hexagonales)
 
-```json
-"@typescript/native": "npm:typescript@^7.0.2",
-"typescript": "npm:@typescript/typescript6@^6.0.2"
-```
-
-TypeScript 7 es el compilador reescrito en Go, y **no trae API programática** — llega recién en
-la 7.1. Todo lo que consume esa API (typescript-eslint, y por lo tanto `eslint-config-next`)
-revienta al arrancar si lo único instalado es la 7:
+Código organizado **por dominio de negocio** en `src/features/`, manteniendo una separación de capas estricta dentro de cada carpeta:
 
 ```
-typescript-eslint does not support TS 7.0.
+src/
+├── app/                      # Rutas Next.js App Router (Solo composición, sin lógica de negocio)
+│   ├── (public)/             # Grupo de rutas públicas (Home, Búsqueda, Detalle, Favoritos)
+│   ├── (auth)/               # Grupo de autenticación (Login, Registro, Verificación, Reseteo)
+│   ├── (vendedor)/           # Dashboard de vendedor (Crear/Editar publicaciones, ver mensajes)
+│   ├── (admin)/              # Panel de administración y moderación
+│   └── api/                  # Route Handlers (Auth, Webhooks, Crons)
+├── proxy.ts                  # Middleware/Proxy en Next 16 (Chequeo optimista de sesión y cabeceras)
+├── features/                 # Screaming Architecture: Un dominio por carpeta
+│   ├── admin/                # Moderación de publicaciones y baneo de usuarios
+│   ├── auth/                 # Registro, login, tokens de verificación, reseteo de password
+│   ├── busqueda/             # Filtros combinados, full-text search GIN, relevancia
+│   ├── contacto/             # Mensajería WhatsApp (wa.me), formulario y notificaciones por email
+│   ├── favoritos/            # Guardar/quitar favoritos con toggle optimista
+│   ├── ia/                   # Adaptadores de IA (Gemini, Groq, OpenRouter) y cascada de fallback
+│   ├── publicaciones/        # Wizard de 4 pasos, CRUD, estados (borrador/activa/pausada/eliminada)
+│   └── usuarios/             # Perfiles y gestión de datos de usuario
+└── shared/                   # Código transversal reutilizado por 2+ features
+    ├── components/ui/        # Primitivos visuales de shadcn/ui
+    ├── lib/                  # Clientes de Prisma, Cloudinary, Upstash Redis, Auth.js
+    ├── rutas.ts              # Constantes de rutas seguras
+    ├── types/                # Tipos e interfaces compartidas
+    └── utils/                # Funciones puras (formato de moneda, slugs, etc.)
 ```
 
-La solución oficial es correr las dos versiones al mismo tiempo, con los alias de arriba. El
-resultado es que `tsc` es el compilador nativo y `tsc6` el de JavaScript:
+### Reglas de Capas Enforzadas por ESLint
 
-| Comando | Versión | Quién lo usa                                   |
-| ------- | ------- | ---------------------------------------------- |
-| `tsc`   | 7.0.2   | `npm run type-check`                           |
-| `tsc6`  | 6.0.3   | typescript-eslint, vía el paquete `typescript` |
+| Capa                | Ubicación                       | Regla de Oro                                                                   |
+| :------------------ | :------------------------------ | :----------------------------------------------------------------------------- |
+| **Presentación**    | `app/`, `features/*/components` | UI y formularios. **Prohibido** acceder a Prisma o contener reglas de negocio. |
+| **Aplicación**      | `features/*/actions`            | Server Actions. Reciben input, validan con Zod y orquestan servicios.          |
+| **Dominio**         | `features/*/services`           | Lógica pura. **Sin dependencias** de Prisma, HTTP ni APIs de Next.js.          |
+| **Infraestructura** | `features/*/*Repository.ts`     | **Único lugar** donde se importa el cliente de Prisma.                         |
 
-Cuando salga TypeScript 7.1 con API nueva y typescript-eslint la soporte, esto vuelve a ser una
-sola línea.
+Estas reglas están configuradas mediante `no-restricted-imports` en [`eslint.config.mjs`](eslint.config.mjs), por lo que cualquier acoplamiento indebido **falla el build en CI**.
 
-## Puesta en marcha
+---
+
+## ⚡ Puesta en Marcha Local
+
+### 1. Instalación de Dependencias
 
 ```bash
 npm install
 ```
 
-Copiá `.env.example` a `.env` y completá **`DATABASE_URL`**, **`DATABASE_URL_UNPOOLED`** y
-**`AUTH_SECRET`** (`npx auth secret`). Google, Resend y Upstash son opcionales en desarrollo:
-sin ellos la app arranca igual y los flujos de auth se pueden probar completos — los links de
-verificación y de reseteo se imprimen en la consola del servidor en vez de enviarse por email.
+### 2. Variables de Entorno
+
+Copiá `.env.example` a `.env` y completá al menos **`DATABASE_URL`**, **`DATABASE_URL_UNPOOLED`** y **`AUTH_SECRET`** (`npx auth secret`).
+
+```bash
+DATABASE_URL="postgresql://user:password@ep-example.neon.tech/neondb?sslmode=require"
+DATABASE_URL_UNPOOLED="postgresql://user:password@ep-example.neon.tech/neondb?sslmode=require"
+AUTH_SECRET="tu_secreto_generado"
+```
+
+> **Nota:** Google OAuth, Resend y Upstash son opcionales en desarrollo local: sin ellos la app arranca igual y los links de verificación o reseteo se imprimen en la consola del servidor.
+
+### 3. Base de Datos y Servidor de Dev
 
 ```bash
 npm run db:generate
-npm run db:migrate:deploy   # si falla con P1001, usá: npm run db:migrate:http
+npm run db:migrate:deploy   # Si falla con P1001 por IPv6, usá: npm run db:migrate:http
 npm run db:seed
 npm run dev
 ```
 
-> El `P1001` en una base que sí está accesible casi siempre es el problema de IPv6 descrito en
-> [Migraciones](#migraciones). `db:migrate:http` aplica exactamente las mismas migraciones por
-> otro transporte.
+La aplicación estará lista en `http://localhost:3000`.
 
-## Arquitectura
+---
 
-Monolito full-stack (un solo deploy) con el **código** organizado por dominio, no por capa
-técnica — Screaming Architecture con disciplina hexagonal en los bordes.
+## 🧪 Testing Suite (3 Niveles)
 
-```
-src/
-├── app/                      # Rutas. Solo composición, sin lógica de negocio.
-│   ├── (public)/             # Route groups: agrupan por layout sin agregar segmento a la URL
-│   ├── (auth)/               # login, registro, verificar-email, recuperar/restablecer
-│   ├── (vendedor)/           # dashboard (requiere sesión)
-│   ├── (admin)/              # admin (requiere rol admin)
-│   └── api/auth/[...nextauth]/
-├── proxy.ts                  # En Next 16 reemplaza a middleware.ts. Chequeo optimista de sesión.
-├── features/                 # Un dominio por carpeta
-│   ├── auth/
-│   │   ├── actions/          # Server Actions: validan con Zod y orquestan
-│   │   ├── services/         # Dominio puro: sin Prisma, sin HTTP, testeable aislado
-│   │   ├── components/       # UI de la feature
-│   │   ├── emails/           # Templates de React Email
-│   │   └── *Repository.ts    # Único lugar que toca Prisma
-│   └── usuarios/
-└── shared/                   # Solo lo que usan 2+ features
-    ├── components/ui/        # Primitivos de shadcn/ui
-    ├── lib/                  # prismaClient, serverEnv, emailSender, rateLimiters, urlBase
-    ├── rutas.ts              # Constantes de rutas (seguras de importar desde el cliente)
-    ├── types/
-    └── utils/
-```
+El proyecto cuenta con una cobertura completa dividida en tres niveles:
 
-### Las capas, y por qué las hace cumplir ESLint
+| Nivel           | Comando                    | Descripción                                                         |
+| :-------------- | :------------------------- | :------------------------------------------------------------------ |
+| **Unitarios**   | `npm test`                 | Tests puramente aislados en Vitest (jsdom/node en paralelo).        |
+| **Integración** | `npm run test:integration` | Ejecuta actions y repositorios contra PostgreSQL real (vía Docker). |
+| **E2E**         | `npm run test:e2e`         | Pruebas de navegación completa de punta a punta con Playwright.     |
+| **Todos**       | `npm run test:all`         | Corre la suite completa en orden.                                   |
 
-| Capa            | Vive en                         | Regla                                               |
-| --------------- | ------------------------------- | --------------------------------------------------- |
-| Presentación    | `app/`, `features/*/components` | No accede a Prisma ni contiene reglas de negocio    |
-| Aplicación      | `features/*/actions`            | Único punto de entrada desde la UI hacia el backend |
-| Dominio         | `features/*/services`           | No conoce Prisma, repositorios ni APIs de Next      |
-| Infraestructura | `features/*/*Repository.ts`     | Único lugar donde se importa el cliente de Prisma   |
-
-Estos límites están escritos como reglas de `no-restricted-imports` en
-[`eslint.config.mjs`](eslint.config.mjs), así que romperlos **falla en CI** en vez de quedar
-como un acuerdo que se erosiona con el tiempo. También está prohibido importar entre features
-distintas: lo que dos features compartan se sube a `shared/`.
-
-> Si editás esas reglas: `no-restricted-imports` es una sola clave, y un bloque posterior
-> **reemplaza** lo que declararon los anteriores para los mismos archivos. No se acumulan. Por
-> eso cada bloque repite todos los patrones que le corresponden.
-
-## Comandos
-
-| Comando                     | Qué hace                                        |
-| --------------------------- | ----------------------------------------------- |
-| `npm run dev`               | Servidor de desarrollo                          |
-| `npm run build`             | Build de producción                             |
-| `npm run lint`              | ESLint, incluidas las reglas de arquitectura    |
-| `npm run type-check`        | `next typegen` + `tsc --noEmit`                 |
-| `npm test`                  | Tests unitarios (Vitest)                        |
-| `npm run test:coverage`     | Tests con reporte de cobertura                  |
-| `npm run test:db:up`        | Levanta el Postgres de test y lo migra          |
-| `npm run test:integration`  | Tests de integración (necesita la base arriba)  |
-| `npm run test:e2e`          | E2E con Playwright (necesita la base arriba)    |
-| `npm run test:all`          | Los tres niveles, en orden                      |
-| `npm run test:db:down`      | Apaga el contenedor de test                     |
-| `npm run format`            | Prettier sobre todo el repo                     |
-| `npm run db:generate`       | Genera el cliente de Prisma                     |
-| `npm run db:migrate:deploy` | Aplica las migraciones pendientes               |
-| `npm run db:seed`           | Carga el catálogo de características            |
-| `npm run db:verify`         | Lista tablas, enums e índices reales de la base |
-| `npm run db:studio`         | Prisma Studio                                   |
-
-## Tests
-
-Tres niveles, con requisitos distintos a propósito:
-
-| Nivel           | Contra qué corre                  | Cuándo               |
-| --------------- | --------------------------------- | -------------------- |
-| **Unitarios**   | Nada externo (jsdom, en paralelo) | Siempre, `npm test`  |
-| **Integración** | Postgres real (node, en serie)    | Con Docker levantado |
-| **E2E**         | La app entera + Postgres real     | Con Docker levantado |
-
-`npm test` no depende de Docker a propósito: es lo que se corre veinte veces por día.
-
-Para los otros dos hace falta el contenedor, **con Docker Desktop abierto**:
+### Correr Tests con Base de Datos de Prueba (Docker)
 
 ```bash
-npm run test:db:up && npm run test:all
+# Levantar la base de datos de test en Docker
+npm run test:db:up
+
+# Correr todos los tests (Unitarios + Integración + E2E)
+npm run test:all
+
+# Apagar la base de datos de test
+npm run test:db:down
 ```
 
-### Por qué Docker y no un branch de Neon
+---
 
-La sección 12.2 del documento de arquitectura propone un branch dedicado de Neon. Se usa un
-contenedor, y la fidelidad está verificada: Neon corre **PostgreSQL 17.10** con `plpgsql` y
-`unaccent`, y `postgres:17-alpine` trae lo mismo. Eso no es un detalle — el índice full-text y la
-función `sin_acentos()` dependen de `unaccent`, así que sobre una imagen sin contrib la búsqueda
-no se podría testear.
+## 📋 Comandos Disponibles
 
-A cambio: en CI el contenedor lo levanta `services:` de GitHub Actions, el reseteo entre corridas
-sale gratis porque nace vacío, no hay credenciales de Neon en el pipeline y corre sin internet.
+| Comando                    | Descripción                                              |
+| :------------------------- | :------------------------------------------------------- |
+| `npm run dev`              | Inicia el servidor de desarrollo                         |
+| `npm run build`            | Realiza el build de producción                           |
+| `npm run lint`             | Ejecuta ESLint (incluye reglas de arquitectura de capas) |
+| `npm run type-check`       | Verificación de tipos TypeScript (`tsc --noEmit`)        |
+| `npm test`                 | Vitest en modo ejecución para unit tests                 |
+| `npm run test:coverage`    | Reporte de cobertura de tests unitarios                  |
+| `npm run test:integration` | Pruebas de integración contra Postgres                   |
+| `npm run test:e2e`         | Pruebas End-to-End con Playwright                        |
+| `npm run format`           | Formatea el código con Prettier                          |
+| `npm run db:seed`          | Carga el catálogo inicial de características/amenities   |
+| `npm run db:studio`        | Abre Prisma Studio para inspeccionar la DB               |
 
-Lo que **no** cubre es el pooler de Neon y su driver serverless. Un problema propio de ese
-transporte (como el `P1001` por IPv6) no lo agarra ningún test de acá: es riesgo de deploy, no de
-lógica de negocio.
+---
 
-Por el mismo criterio los E2E corren contra la app local y no contra el preview de Vercel como
-propone 12.3: los previews usan las variables de producción, así que unos tests que registran
-usuarios y publican inmuebles estarían escribiendo en la base real. La config de Playwright además
-**apaga explícitamente** Resend, Upstash y los proveedores de IA — sin eso el proceso hereda las
-credenciales del `.env` y los tests le pegan a los servicios de verdad.
+## 🎯 Preguntas Frecuentes y Decisiones de Arquitectura (Sección 16)
 
-## Deploy en Vercel
+Documentación de decisiones clave para entrevistas técnicas:
 
-Importá el repo desde el dashboard de Vercel; no hace falta tocar la configuración de build.
+1. **¿Por qué Leaflet + OpenStreetMap en lugar de Google Maps?**  
+   Para mantener un costo real de $0 sin requerir tarjeta de crédito en ningún punto del onboarding ni producción, permitiendo pines y clusters personalizados sin cuotas por SKU.
+2. **¿Por qué monolito Next.js y no backend separado (Express/FastAPI)?**  
+   Elimina fricción de CORS, despliega en un solo click en Vercel, comparte tipos TypeScript entre cliente y servidor, y mantiene cero costo de hosting adicional para un equipo de 3 personas.
+3. **¿Cómo funciona la resiliencia de la IA?**  
+   Se utiliza el patrón _Strategy/Adapter_ mediante Vercel AI SDK: intenta generar la descripción con **Gemini** (free tier generoso); si falla o agota cuota, cae automáticamente a **Groq** (baja latencia), y finalmente a **OpenRouter**. Si los 3 fallan, la publicación continúa permitiendo escritura manual (la IA nunca bloquea el camino crítico).
+4. **¿Cómo se protegen los recursos del usuario (IDOR)?**  
+   Todas las Server Actions re-verifican la autorización en el servidor comprobando que `publicacion.usuario_id === session.user.id` (o rol `admin`), ignorando cualquier ID o parámetro manipulado desde el cliente.
+5. **¿Cómo se mitiga el spam y la fuerza bruta?**  
+   Se implementó Rate Limiting con Upstash Redis por IP/Usuario en Server Actions de login (5 intentos/15 min), formulario de contacto (3 msgs/hora) e IA.
 
-**Por qué hay un script `vercel-build` además de `build`:** el cliente de Prisma 7 se genera en
-`src/generated/` y está gitignoreado (es código generado, no fuente), así que en un checkout
-limpio no existe y `next build` solo falla con "Cannot find module". Vercel, si encuentra un
-script `vercel-build`, lo usa en lugar de `build` — y ahí es donde corren las migraciones antes
-del build, como pide 13.4. El `build` común no las corre, para que el CI pueda buildear con una
-`DATABASE_URL` dummy sin intentar migrar nada.
+---
 
-Variables a cargar en Vercel (Settings → Environment Variables), separadas por entorno:
+## 📄 Licencia y Créditos
 
-| Variable                | Production        | Preview              |
-| ----------------------- | ----------------- | -------------------- |
-| `DATABASE_URL`          | pooled            | pooled               |
-| `DATABASE_URL_UNPOOLED` | directa           | directa              |
-| `AUTH_SECRET`           | uno propio        | uno propio, distinto |
-| `RESEND_API_KEY`        | key de producción | key de test          |
-| `UPSTASH_*`             | sí                | sí                   |
-| `CLOUDINARY_*`          | las tres          | las tres             |
-| `CRON_SECRET`           | sí                | no hace falta        |
-| `AUTH_URL`              | **no cargar**     | **no cargar**        |
-
-`CRON_SECRET` solo hace falta en Production: los crons de Vercel no se disparan en preview
-deployments.
-
-Las variables tienen que estar cargadas **antes** del primer deploy: `vercel-build` corre
-`prisma migrate deploy` y la validación de entorno de `serverEnv.ts` falla el build si falta
-`DATABASE_URL` o `AUTH_SECRET`. Es a propósito — es preferible un build que falla a una app
-desplegada que explota en la primera request.
-
-`AUTH_URL` se omite a propósito: Auth.js la deduce del deployment. Si se fija a mano, los links
-de verificación de un preview deployment apuntarían a producción y el usuario terminaría
-confirmando su email contra la base equivocada.
-
-## Fotos: por qué no usamos `next-cloudinary`
-
-Cloudinary sugiere `npm i next-cloudinary` en su onboarding. Acá se usa el SDK oficial
-(`cloudinary`) del lado del servidor y `fetch` desde el navegador. Dos motivos:
-
-1. `next-cloudinary` declara como peer `next: ^12 || ^13 || ^14 || ^15`. **No incluye la 16.**
-   Con el `legacy-peer-deps` de este repo instalaría igual, pero sería compatibilidad no
-   verificada en el camino por el que pasan todas las fotos del sitio.
-2. De esa librería solo usaríamos el widget de subida y un wrapper de `next/image`. Lo que
-   necesitamos —firmar una subida y armar URLs con transformaciones— son ~40 líneas propias.
-
-**Cómo funciona la subida:** el navegador pide una firma a una Server Action (que exige sesión
-y está rate-limitada) y con ella sube el archivo **directo a Cloudinary**, sin pasar por nuestro
-servidor. Además de ahorrar una vuelta de red por foto, es lo que hace que funcione en Vercel:
-las funciones serverless tienen un tope de ~4.5 MB de body y una sola foto de celular lo supera.
-
-Se usa subida **firmada** y no un _unsigned upload preset_: un preset sin firmar es una URL que
-cualquiera puede copiar del bundle del navegador para subir archivos a la cuenta sin límite.
-
-La primera imagen del arreglo es la portada, y `es_portada` se deriva de la posición al guardar.
-Con un booleano por imagen se puede llegar a cero portadas o a dos; derivándola del orden, ese
-estado inválido no existe.
-
-### Limpieza de imágenes huérfanas
-
-Como las fotos se suben **antes** de que exista la publicación, quien abandona el wizard a mitad
-de camino deja archivos sin ninguna fila que los referencie. Un cron diario los borra.
-
-- **Cuándo:** `0 6 * * *` (3 AM en Argentina), declarado en [`vercel.json`](vercel.json). El
-  plan Hobby de Vercel permite un disparo por día, que para esto sobra.
-- **Endpoint:** `/api/cron/limpiar-imagenes-huerfanas`, protegido con `CRON_SECRET`. Sin la
-  variable configurada **rechaza todo**, también en local: la alternativa —dejar pasar cuando no
-  hay secreto "porque en desarrollo es cómodo"— publica un endpoint que borra archivos en cuanto
-  alguien despliega sin configurarlo.
-- **Período de gracia de 24 h:** solo se borra lo que lleva más de un día sin referencia. Sin
-  ese margen, el cron le borraría las fotos a alguien que está completando el wizard.
-- **Tope de 100 por corrida:** no es una optimización, es contención de daño. El modo de falla
-  que importa es que la lista de referencias venga vacía por un bug — ahí _todo_ parecería
-  huérfano. Con el tope, el peor caso de un día son 100 archivos y un warning en los logs, en
-  vez de la cuenta entera.
-
-Antes de confiar en él, conviene correrlo en seco:
-
-```bash
-curl -H "Authorization: Bearer $CRON_SECRET" \
-  "https://TU-DOMINIO/api/cron/limpiar-imagenes-huerfanas?simular=1"
-```
-
-Devuelve el mismo resumen que la corrida real (cuántos assets hay, cuántos están referenciados,
-cuántos están en gracia y cuántos borraría) sin borrar nada.
-
-## Migraciones
-
-El flujo normal es el de Prisma:
-
-```bash
-npx prisma migrate dev -n nombre_de_la_migracion
-```
-
-**Si `prisma migrate` falla con `P1001: Can't reach database server`** aunque la base esté
-accesible: el motivo suele ser IPv6. El schema engine de Prisma resuelve el host de Neon,
-prueba el registro AAAA primero, y en una red sin salida IPv6 real se queda esperando hasta el
-timeout. Se confirma comparando el handshake de Postgres por IPv4 (responde) contra IPv6
-(timeout). El runtime de la app no se ve afectado porque el driver adapter de Neon va por HTTPS.
-
-En ese caso hay un camino alternativo que no toca el 5432:
-
-```bash
-npm run db:migrate:new -- nombre_de_la_migracion   # genera el SQL offline
-npm run db:migrate:http                            # lo aplica por el driver HTTP de Neon
-```
-
-`db:migrate:new` diffea el schema actual contra `prisma/schema.snapshot.prisma` (el schema tal
-como quedó en la última migración) y actualiza el snapshot. `db:migrate:http` hace lo mismo que
-`prisma migrate deploy` —incluido el registro en `_prisma_migrations` con su checksum— pero
-ejecutando el SQL por HTTPS. Los archivos de `prisma/migrations/` son idénticos a los que
-generaría `migrate dev`, así que en Vercel y en CI (donde IPv6 funciona) se sigue usando
-`prisma migrate deploy` sin nada especial.
-
-### Migraciones escritas a mano
-
-Lo que el schema de Prisma no sabe expresar —columnas generadas, `tsvector`, índices GIN,
-extensiones— va en una migración escrita a mano, sin pasar por el diff. Hoy hay una:
-`20260725211500_busqueda_full_text_publicacion`, la del índice full-text de la búsqueda.
-
-Aun así la columna **se declara** en `schema.prisma` como `Unsupported("tsvector")?`, y el
-mismo bloque se copia a mano en `schema.snapshot.prisma`. Los dos lados hacen falta: si el
-schema no la declara, el próximo `prisma migrate dev` la lee como drift y genera un
-`DROP COLUMN`; si el snapshot no la tiene, el próximo `db:migrate:new` genera un `ADD COLUMN`
-de una columna que ya existe.
-
-Se verifica con un diff que tiene que dar vacío:
-
-```bash
-npx prisma migrate diff --from-schema prisma/schema.snapshot.prisma --to-schema prisma/schema.prisma --script
-```
-
-## Cómo probar los flujos de auth sin configurar servicios externos
-
-Con solo `DATABASE_URL` y `AUTH_SECRET`:
-
-1. `npm run dev` y andá a `/registro`. Creá una cuenta.
-2. El link de verificación **no** se envía por email: aparece en la consola del servidor.
-   Abrilo.
-3. Volvé a `/login`. Antes de verificar, el login se rechaza con el motivo puntual y ofrece
-   reenviar el link; después de verificar, entra y redirige al dashboard.
-4. `/recuperar-password` funciona igual: el link de reseteo sale por consola.
-
-Los tokens se guardan **hasheados** (SHA-256) en la base, son de un solo uso, y emitir uno nuevo
-invalida los anteriores del mismo tipo.
-
-## Convenciones
-
-- Nombres de archivo por rol, no genéricos: `authJsInstance.ts`, `usuarioRepository.ts`,
-  `tokenVerificacionService.ts`. Nada de un `auth.ts` que después se multiplique en tres
-  archivos homónimos con responsabilidades distintas.
-- Componentes React en `PascalCase`; hooks `useAlgo`; Server Actions `verbo + entidad`
-  (`registrarUsuario`); carpetas de features en plural.
-- Componentes de servidor por default: `'use client'` es la excepción que hay que justificar.
-- Los schemas de Zod son la única fuente de verdad de las validaciones — nunca se duplica una
-  condición equivalente a mano en un componente.
-- Los comentarios explican el **por qué**, no el qué.
-- Conventional Commits. Git Flow simplificado: `main` + `develop` + `feature/*`.
-
-## Deuda conocida
-
-- **La home y el detalle se sirven SSR, no con ISR.** La tabla de 9.1 del documento de
-  arquitectura pide ISR en las dos, y es una desviación consciente: `EncabezadoSitio` lee la
-  sesión del lado del servidor para todo el layout público —email, acceso al dashboard, link de
-  admin según el rol— y eso vuelve dinámica cualquier ruta que lo use. No es un problema de esas
-  páginas: cachearlas exigiría resolver la sesión en el cliente en **todas**, y con eso el
-  encabezado mostraría un instante el estado deslogueado en cada carga del sitio. Se prefirió no
-  pagar ese parpadeo con el volumen que tiene el proyecto.
-
-  Lo que ya se hizo es dejar el camino abierto: el estado de favoritos y el contador de visitas
-  salieron del render (`FavoritosProvider` y `RegistrarVista`), que eran los otros dos motivos
-  por los que esas páginas no podían cachearse. El día que el encabezado se mueva al cliente,
-  alcanza con declarar `revalidate` en cada página.
-
-- **Un reseteo de contraseña no invalida las sesiones ya abiertas.** Con estrategia JWT la
-  sesión no se consulta contra la base en cada request, así que un token emitido antes del
-  cambio sigue siendo válido hasta que expira. Va junto con la rotación de JWT al cambiar de rol
-  (Etapa 5).
-- **Rate limiting inactivo sin Upstash.** El código degrada con gracia a propósito para el
-  desarrollo local, pero es un requisito de release, no opcional en producción.
-- **La limpieza de huérfanas solo corre en producción.** Los crons de Vercel no se disparan en
-  preview deployments, así que las fotos abandonadas en un preview quedan hasta que el cron de
-  producción las alcance — comparten la misma cuenta de Cloudinary, así que igual las junta.
-- **`legacy-peer-deps=true` en `.npmrc`.** Es un conflicto entre peers opcionales de
-  `@hookform/resolvers` y `@typeschema/valibot` que no involucra ningún paquete que el proyecto
-  importe. Se puede quitar cuando upstream lo resuelva.
-- **Avisos de `npm audit`.** Los que tocaban producción se resolvieron con `overrides` en
-  `package.json`: `postcss` y `sharp` llegaban pinneados por Next a versiones vulnerables, y
-  `@hono/node-server` entraba por el CLI de shadcn. Lo que propone `npm audit fix --force` para
-  esos tres es **bajar Next a la 9.3.3**, que es peor que el problema; el override los sube sin
-  tocar Next.
-
-  Quedan 9 avisos, todos la misma cadena: `minimatch`/`brace-expansion` vía ESLint y sus
-  plugins. Resolverlos exige ESLint 10, que es un major y arrastra a `eslint-config-next`. Son
-  ReDoS y DoS en herramientas que corren en la máquina del desarrollador y en CI sobre código
-  propio: no hay camino desde una request de producción hasta ellos.
+Proyecto desarrollado como trabajo de portfolio profesional full-stack.  
+Para consultar el Documento de Arquitectura Completo de 16 Secciones, revisar los archivos PDF adjuntos en el repositorio.
