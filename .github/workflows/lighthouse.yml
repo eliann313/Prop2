@@ -72,8 +72,13 @@ jobs:
             // Dejarlo puesto habría bloqueado cada PR con un número que parece un problema de
             // SEO y no lo es. En producción SÍ se evalúa, que es donde la pregunta "¿esta
             // página se puede indexar?" tiene sentido.
-            if (process.env.ENTORNO !== "Production") {
+            const esProduccion = (process.env.ENTORNO || "").toLowerCase() === "production";
+            if (!esProduccion) {
               config.ci.collect.settings.skipAudits = ["is-crawlable"];
+              if (config.ci.assert && config.ci.assert.assertions) {
+                config.ci.assert.assertions["is-crawlable"] = "off";
+                config.ci.assert.assertions["categories:seo"] = ["warn", { "minScore": 0.9 }];
+              }
             }
 
             fs.writeFileSync("lighthouserc.json", JSON.stringify(config, null, 2));
