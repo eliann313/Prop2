@@ -74,7 +74,7 @@ export function TarjetaDePublicacion({
   ].filter(Boolean);
 
   return (
-    <Card className="relative overflow-hidden pt-0">
+    <Card className="property-result-card">
       {/* Fuera del Link a propósito: un <button> adentro de un <a> es HTML inválido, y en la
           práctica hace que el click en el corazón navegue a la publicación. */}
       {accion}
@@ -89,7 +89,7 @@ export function TarjetaDePublicacion({
         href={`${RUTAS.publicaciones}/${rutaDePublicacion(publicacion.id, publicacion.titulo)}`}
         className={cn("grid gap-3", noDisponible && "opacity-60")}
       >
-        <div className="bg-muted relative aspect-[4/3] w-full overflow-hidden">
+        <div className="property-result-image">
           {portada ? (
             // `sizes` no es opcional con `fill`: sin él Next pide la imagen al ancho del
             // viewport, y en una grilla de tres columnas eso es descargar el triple de bytes
@@ -99,41 +99,36 @@ export function TarjetaDePublicacion({
               alt=""
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-              className="object-cover"
+              className="property-result-image-content"
             />
           ) : (
-            <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-              Sin foto
-            </div>
+            <div className="property-result-image-empty">Sin foto</div>
           )}
         </div>
 
-        <CardContent className="grid gap-2">
-          <div className="flex items-start justify-between gap-2">
+        <CardContent className="property-result-content">
+          <div className="property-result-summary">
             <div>
-              <p className="text-lg leading-tight font-semibold">
+              <p className="property-result-price">
                 {formatearPrecio(publicacion.precio, moneda)}
                 {publicacion.operacion === "alquiler" ? (
-                  <span className="text-muted-foreground text-sm font-normal">
-                    {" "}
-                    / mes
-                  </span>
+                  <span className="property-result-rent-suffix"> / mes</span>
                 ) : null}
               </p>
               {/* La equivalencia va debajo y en chico a propósito: es un dato de referencia,
                   no el precio. El precio es el que cargó el vendedor, en su moneda. */}
               {equivalencia ? (
-                <p className="text-muted-foreground text-xs">{equivalencia}</p>
+                <p className="property-result-equivalence">{equivalencia}</p>
               ) : null}
             </div>
-            <Badge variant="secondary" className="shrink-0">
+            <Badge variant="secondary" className="property-result-badge">
               {publicacion.operacion === "venta" ? "Venta" : "Alquiler"}
             </Badge>
           </div>
 
-          <p className="line-clamp-2 text-sm font-medium">{publicacion.titulo}</p>
+          <p className="property-result-title">{publicacion.titulo}</p>
 
-          <p className="text-muted-foreground text-sm">
+          <p className="property-result-location">
             {ETIQUETAS_TIPO_INMUEBLE[
               publicacion.tipoInmueble as keyof typeof ETIQUETAS_TIPO_INMUEBLE
             ] ?? publicacion.tipoInmueble}{" "}
@@ -142,7 +137,7 @@ export function TarjetaDePublicacion({
           </p>
 
           {detalles.length > 0 ? (
-            <p className="text-muted-foreground text-sm">{detalles.join(" · ")}</p>
+            <p className="property-result-details">{detalles.join(" · ")}</p>
           ) : null}
         </CardContent>
       </Link>

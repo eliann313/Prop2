@@ -5,11 +5,14 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-bordeaux: #581845;
+  --color-mustard: #ffc300;
+  --color-creamy: #faf0e6;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-poppins), "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  --font-heading: var(--font-playfair), "Playfair Display", Georgia, serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -121,10 +124,334 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans;
+  }
+}
+
+/* ─── Animación de zoom suave para las imágenes del hero ──────────────── */
+@keyframes heroZoomMove {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.12);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-hero-zoom {
+  animation: heroZoomMove 20s ease-in-out infinite alternate;
+}
+
+/* ─── Estilos del slider de fondo del hero (crossfade) ────────────────── */
+
+/* Cada imagen del slider se posiciona de forma absoluta para apilarlas.
+   Empiezan invisibles (opacity: 0) y la transición de 1.5s produce
+   el efecto crossfade suave al cambiar entre ellas. */
+.hero-slider-imagen {
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+  /* Aplicamos la misma animación de zoom sutil que tenía la imagen original */
+  animation: heroZoomMove 20s ease-in-out infinite alternate;
+  transform-origin: center;
+}
+
+/* Imagen activa: se hace visible con la transición suave */
+.hero-slider-activa {
+  opacity: 1;
+}
+
+.hero-slider-sin-zoom {
+  animation: none;
+}
+
+.hero-slider-zoom-arriba {
+  animation: heroZoomArriba 16s ease-in-out infinite alternate;
+}
+
+/* ─── Pantalla de inicio de sesión ───────────────────────────────────── */
+.auth-layout {
+  display: flex;
+  min-height: 100%;
+  flex: 1;
+  flex-direction: column;
+  background: #fff;
+}
+
+.auth-header {
+  display: flex;
+  height: 98px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to right, #3b1030, #5a1b48);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+}
+
+.auth-brand-mark {
+  position: relative;
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+
+.auth-brand-square {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border: 1px solid;
+}
+
+.auth-brand-square-light {
+  top: 0;
+  left: 0;
+  border-color: #fff;
+}
+
+.auth-brand-square-gold {
+  right: 0;
+  bottom: 0;
+  border-color: #bd9a55;
+}
+
+.auth-brand-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.auth-brand-name {
+  font-family: var(--font-playfair), Georgia, serif;
+  font-size: 29px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.auth-brand-name sup {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  transform: translateY(-0.4em);
+  border: 1px solid #bd9a55;
+  color: #bd9a55;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.auth-brand-tagline {
+  margin-top: 4px;
+  color: #bd9a55;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+}
+
+.auth-layout-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 16px 32px;
+}
+
+.auth-content-inner {
+  width: 100%;
+  max-width: 440px;
+}
+
+.auth-back-link {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 4px;
+  margin: 28px auto 0;
+  color: #8a8390;
+  font-size: 12px;
+  transition: color 150ms ease;
+}
+
+.auth-back-link:hover {
+  color: #5a1b48;
+}
+
+.auth-back-link svg {
+  width: 14px;
+  height: 14px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  border: 1px solid #e9e4e0;
+  border-radius: 10px;
+  padding: 0;
+  box-shadow: 0 12px 35px rgb(59 16 48 / 8%);
+}
+
+.login-card-header {
+  gap: 8px;
+  padding: 36px 40px 0;
+}
+
+.login-card-title {
+  color: #5a1b48;
+  font-family: var(--font-playfair), Georgia, serif;
+  font-size: 23px;
+  font-weight: 600;
+}
+
+.login-card-description,
+.login-signup-text {
+  color: #8a8390;
+  font-size: 13.5px;
+  font-weight: 300;
+}
+
+.login-card-content {
+  display: grid;
+  gap: 20px;
+  padding: 24px 40px 36px;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #8a8390;
+  font-size: 12px;
+}
+
+.login-divider span:first-child,
+.login-divider span:last-child {
+  height: 1px;
+  flex: 1;
+  background: #e9e4e0;
+}
+
+.login-card-footer {
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 0 40px 32px;
+}
+
+.login-signup-text {
+  text-align: center;
+}
+
+.login-signup-link,
+.login-forgot-link {
+  color: #5a1b48;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: #bd9a55;
+  text-underline-offset: 4px;
+}
+
+.login-google-button,
+.login-submit-button {
+  width: 100%;
+  height: 44px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.login-google-button {
+  border-color: #e9e4e0;
+  background: #fff;
+  color: #2b2530;
+}
+
+.login-google-button:hover {
+  background: #faf8f6;
+}
+
+.login-form {
+  display: grid;
+  gap: 20px;
+}
+
+.login-input {
+  height: 36px;
+  border: 0;
+  border-bottom: 1px solid #e9e4e0;
+  border-radius: 0;
+  padding: 4px 0;
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.login-input:focus-visible {
+  border-bottom-color: #bd9a55;
+  box-shadow: none;
+  outline: none;
+}
+
+.login-forgot-link {
+  justify-self: end;
+  margin-top: -8px;
+  font-size: 12px;
+}
+
+.login-submit-button {
+  background: #5a1b48;
+  color: #fff;
+}
+
+.login-submit-button:hover {
+  background: #3b1030;
+}
+
+.recovery-card-footer {
+  justify-content: flex-start;
+  border-top: 1px solid #e9e4e0;
+  padding-top: 22px;
+}
+
+.recovery-login-link {
+  color: #8a8390;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.auth-layout-content:has(.recovery-card) .auth-back-link {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .auth-layout-content {
+    padding-top: 40px;
+  }
+
+  .login-card-header,
+  .login-card-content {
+    padding-right: 32px;
+    padding-left: 32px;
+  }
+
+  .login-card-footer {
+    padding-right: 32px;
+    padding-left: 32px;
   }
 }

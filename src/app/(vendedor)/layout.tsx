@@ -1,4 +1,5 @@
 import { EncabezadoSitio } from "@/shared/components/EncabezadoSitio";
+import "@/shared/components/shared-components.css";
 
 /**
  * Layout del área de vendedor. El proxy ya filtra por rol antes de llegar acá, pero cada

@@ -16,23 +16,20 @@ export const metadata: Metadata = { title: "Recuperar contraseña" };
 
 export default function PaginaRecuperarPassword() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recuperar contraseña</CardTitle>
-        <CardDescription>
+    <Card className="login-card recovery-card">
+      <CardHeader className="login-card-header">
+        <CardTitle className="login-card-title">Recuperar contraseña</CardTitle>
+        <CardDescription className="login-card-description">
           Ingresá tu email y te mandamos un link para elegir una nueva.
         </CardDescription>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="login-card-content">
         <FormularioRecuperarPassword />
       </CardContent>
 
-      <CardFooter>
-        <Link
-          href={RUTAS.login}
-          className="text-muted-foreground text-sm underline underline-offset-4"
-        >
+      <CardFooter className="login-card-footer recovery-card-footer">
+        <Link href={RUTAS.login} className="recovery-login-link">
           Volver a iniciar sesión
         </Link>
       </CardFooter>

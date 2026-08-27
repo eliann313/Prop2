@@ -3,18 +3,30 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 import { registrarUsuario } from "@/features/auth/actions/registrarUsuario";
-import { schemaRegistro, type DatosRegistro } from "@/features/auth/authSchemas";
+import { schemaRegistro } from "@/features/auth/authSchemas";
 import { AvisoDeAccion } from "@/shared/components/AvisoDeAccion";
 import { CampoTexto } from "@/shared/components/CampoTexto";
 import { Button } from "@/shared/components/ui/button";
 import type { ResultadoAccion } from "@/shared/types/resultadoAccion";
 
+// Schema extendido para el cliente con confirmación de contraseña (validación UX)
+const schemaFormularioRegistro = schemaRegistro
+  .extend({
+    confirmarPassword: z.string().min(1, "Confirmá tu contraseña"),
+  })
+  .refine((datos) => datos.password === datos.confirmarPassword, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmarPassword"],
+  });
+
+type DatosFormularioRegistro = z.infer<typeof schemaFormularioRegistro>;
+
 export function FormularioRegistro() {
   const [resultado, setResultado] = useState<ResultadoAccion | null>(null);
-  // useTransition y no un useState de "cargando": mantiene el botón deshabilitado durante toda
-  // la transición, incluido el re-render que la action provoca al terminar.
+  // useTransition mantiene el botón deshabilitado durante toda la transición
   const [enviando, iniciarEnvio] = useTransition();
 
   const {
@@ -22,28 +34,29 @@ export function FormularioRegistro() {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<DatosRegistro>({
-    // El mismo schema que revalida la action en el servidor (14.3).
-    resolver: zodResolver(schemaRegistro),
+  } = useForm<DatosFormularioRegistro>({
+    // El mismo schema base del servidor refinado para el frontend
+    resolver: zodResolver(schemaFormularioRegistro),
   });
 
-  function onSubmit(datos: DatosRegistro) {
+  function onSubmit(datos: DatosFormularioRegistro) {
     iniciarEnvio(async () => {
-      const respuesta = await registrarUsuario(datos);
+      // Extraemos confirmarPassword antes de enviar el payload a la Server Action
+      const { confirmarPassword: _, ...datosRegistro } = datos;
+      const respuesta = await registrarUsuario(datosRegistro);
       setResultado(respuesta);
-      // Solo se limpia si salió bien: ante un error, rehacer el formulario entero es peor que
-      // corregir el campo que falló.
       if (respuesta.ok) reset();
     });
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
       <AvisoDeAccion resultado={resultado} />
 
       <CampoTexto
         etiqueta="Nombre"
         autoComplete="name"
+        className="login-input"
         error={errors.nombre?.message}
         {...register("nombre")}
       />
@@ -51,21 +64,29 @@ export function FormularioRegistro() {
         etiqueta="Email"
         type="email"
         autoComplete="email"
+        className="login-input"
         error={errors.email?.message}
         {...register("email")}
       />
       <CampoTexto
         etiqueta="Contraseña"
         type="password"
-        // "new-password" y no "current-password": es lo que hace que el gestor de contraseñas
-        // ofrezca generar una, en vez de autocompletar una vieja.
         autoComplete="new-password"
+        className="login-input"
         error={errors.password?.message}
         ayuda="Al menos 10 caracteres, con una letra y un número."
         {...register("password")}
       />
+      <CampoTexto
+        etiqueta="Confirmar contraseña"
+        type="password"
+        autoComplete="new-password"
+        className="login-input"
+        error={errors.confirmarPassword?.message}
+        {...register("confirmarPassword")}
+      />
 
-      <Button type="submit" disabled={enviando}>
+      <Button type="submit" disabled={enviando} className="login-submit-button">
         {enviando ? "Creando tu cuenta…" : "Crear cuenta"}
       </Button>
     </form>
