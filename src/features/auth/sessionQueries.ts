@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/features/auth/authJsInstance";
@@ -17,12 +18,14 @@ import type { Rol } from "@/generated/prisma/enums";
  * autorización de la app no debería depender de una API experimental.
  */
 
-export async function obtenerSesion() {
-  return auth();
+const obtenerSesionCacheada = cache(() => auth());
+
+export function obtenerSesion() {
+  return obtenerSesionCacheada();
 }
 
 export async function obtenerUsuarioActual() {
-  const sesion = await auth();
+  const sesion = await obtenerSesion();
   return sesion?.user ?? null;
 }
 

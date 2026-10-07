@@ -87,6 +87,16 @@ test("un visitante sin cuenta busca, filtra, abre el detalle y consulta", async 
     await expect(page.getByRole("link", { name: new RegExp(OTRA, "i") })).toHaveCount(0);
   });
 
+  await test.step("una página fuera de rango conserva los filtros y vuelve a resultados reales", async () => {
+    await page.goto("/publicaciones?q=balcon&pagina=2");
+    await expect(page).toHaveURL(/[?&]pagina=1(?:&|$)/);
+    await expect(page).toHaveURL(/[?&]q=balcon(?:&|$)/);
+    await expect(
+      page.getByRole("link", { name: new RegExp(BUSCADA, "i") }),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(OTRA, "i") })).toHaveCount(0);
+  });
+
   await test.step("el detalle abre con la URL canónica", async () => {
     await page.goto("/publicaciones?q=balcon");
     await page.getByRole("link", { name: new RegExp(BUSCADA, "i") }).click();

@@ -20,11 +20,11 @@ export function buscarUsuarioPorEmail(email: string) {
   return prisma.user.findUnique({ where: { email } });
 }
 
-/** Lo mínimo que necesita el callback jwt para refrescar autorización sin traer todo el usuario. */
-export function buscarRolYEstado(id: string) {
+/** Datos mínimos para validar/revocar un JWT sin cargar el resto del perfil. */
+export function buscarUsuarioParaValidarSesion(id: string) {
   return prisma.user.findUnique({
     where: { id },
-    select: { rol: true, estado: true },
+    select: { id: true, rol: true, estado: true, passwordHash: true },
   });
 }
 

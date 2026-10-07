@@ -11,12 +11,8 @@ import {
 } from "@/features/auth/services/tokenVerificacionService";
 import {
   buscarTokenPorHash,
-  marcarTokenUsado,
+  restablecerPasswordConToken,
 } from "@/features/auth/tokenVerificacionRepository";
-import {
-  actualizarPasswordHash,
-  marcarEmailVerificado,
-} from "@/features/usuarios/usuarioRepository";
 import { estaEnFiltraciones } from "@/shared/lib/passwordsFiltradas";
 import { exito, fallo, type ResultadoAccion } from "@/shared/types/resultadoAccion";
 
@@ -37,6 +33,7 @@ export async function restablecerPassword(entrada: unknown): Promise<ResultadoAc
   const invalido =
     !registro ||
     registro.tipo !== "recuperacion_password" ||
+    registro.usuario.estado !== "activo" ||
     registro.usadoEn !== null ||
     estaVencido(registro.expiraEn);
 
@@ -55,20 +52,16 @@ export async function restablecerPassword(entrada: unknown): Promise<ResultadoAc
     });
   }
 
-  // Consumir el token primero: si dos requests llegan juntas, solo una cambia la contraseña.
-  const loConsumio = await marcarTokenUsado(registro.id);
-  if (!loConsumio) {
-    return fallo("Ese link ya se usó. Pedí uno nuevo.");
-  }
-
-  await actualizarPasswordHash(registro.usuario.id, await hashearPassword(password));
-
-  // Haber recibido y abierto el link prueba que controla la casilla, que es exactamente lo que
-  // verifica el flujo de confirmación de email. Marcarlo verificado acá evita el callejón sin
-  // salida de quien se registró, nunca confirmó, y llega por "olvidé mi contraseña": cambiaría
-  // la contraseña y seguiría sin poder entrar.
-  if (!registro.usuario.emailVerified) {
-    await marcarEmailVerificado(registro.usuario.id);
+  const actualizado = await restablecerPasswordConToken({
+    tokenId: registro.id,
+    usuarioId: registro.usuario.id,
+    passwordHash: await hashearPassword(password),
+    emailVerificadoEn: registro.usuario.emailVerified,
+  });
+  if (!actualizado) {
+    return fallo(
+      "El link no es válido o venció. Pedí uno nuevo desde “Olvidé mi contraseña”.",
+    );
   }
 
   return exito("Contraseña actualizada. Ya podés iniciar sesión.");

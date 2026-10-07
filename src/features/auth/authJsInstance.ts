@@ -10,9 +10,13 @@ import {
   DemasiadosIntentos,
   EmailSinVerificar,
 } from "@/features/auth/erroresDeLogin";
+import {
+  coincideHuellaDePassword,
+  crearHuellaDePassword,
+} from "@/features/auth/services/huellaDePassword";
 import { verificarPassword } from "@/features/auth/services/passwordService";
 import {
-  buscarRolYEstado,
+  buscarUsuarioParaValidarSesion,
   buscarUsuarioPorEmail,
 } from "@/features/usuarios/usuarioRepository";
 import { prisma } from "@/shared/lib/prismaClient";
@@ -84,6 +88,7 @@ export const {
           image: usuario.image,
           rol: usuario.rol,
           estado: usuario.estado,
+          huellaPassword: crearHuellaDePassword(usuario.id, usuario.passwordHash),
         };
       },
     }),
@@ -143,26 +148,41 @@ export const {
       return true;
     },
 
-    async jwt({ token, user, trigger }) {
-      // Al iniciar sesión, `user` trae rol y estado.
+    async jwt({ token, user, account }) {
+      // Al iniciar sesión, `user` trae el id; al revalidar solo queda `token.sub`. El lookup
+      // reducido confirma que el usuario sigue activo y permite revocar JWT tras cambio de clave.
+      // Es una consulta pequeña por lectura de sesión; React cache la comparte entre componentes
+      // de una misma pasada de render.
       const conDatosDeLogin = authJsOptions.callbacks.jwt({ token, user });
+      const usuarioId = token.sub ?? (user ? user.id : undefined);
+      if (!usuarioId) return null;
 
-      // Cuando Auth.js revalida el token no hay `user`, así que el rol del JWT es el que se
-      // firmó al entrar. Eso importa acá porque el rol CAMBIA en vivo: un comprador pasa a
-      // vendedor al publicar (3.4). Sin este refresco, ese usuario seguiría viendo el
-      // dashboard bloqueado hasta cerrar sesión. Se relee solo si el token todavía no tiene
-      // rol o si la sesión se actualizó explícitamente, para no pegarle a la base en cada
-      // request.
-      if (!conDatosDeLogin.rol || trigger === "update") {
-        if (token.sub) {
-          const actual = await buscarRolYEstado(token.sub);
-          if (actual) {
-            conDatosDeLogin.rol = actual.rol;
-            conDatosDeLogin.estado = actual.estado;
-          }
+      const actual = await buscarUsuarioParaValidarSesion(usuarioId);
+      if (!actual || actual.estado !== "activo") return null;
+
+      const huellaActual = crearHuellaDePassword(actual.id, actual.passwordHash);
+      if (user) {
+        // Si hubo un reset mientras bcrypt validaba la clave anterior, esa autenticación
+        // no puede crear una sesión vinculada a la clave nueva.
+        if (
+          account?.provider === "credentials" &&
+          !coincideHuellaDePassword(user.huellaPassword, huellaActual)
+        ) {
+          return null;
         }
+        // La sesión recién creada recibe solo la huella; nunca copiamos el hash bcrypt al JWT.
+        conDatosDeLogin.sub = actual.id;
+        conDatosDeLogin.huellaPassword = huellaActual;
+      } else if (
+        !coincideHuellaDePassword(conDatosDeLogin.huellaPassword, huellaActual)
+      ) {
+        // También revoca JWT legacy, que todavía no traen la versión/huella.
+        return null;
       }
 
+      // Rol y estado son datos vivos del usuario; no se acepta la copia vieja del JWT.
+      conDatosDeLogin.rol = actual.rol;
+      conDatosDeLogin.estado = actual.estado;
       return conDatosDeLogin;
     },
   },

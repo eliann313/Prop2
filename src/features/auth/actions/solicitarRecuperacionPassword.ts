@@ -3,6 +3,7 @@
 import { schemaSolicitudRecuperacion } from "@/features/auth/authSchemas";
 import { emitirYEnviarRecuperacionPassword } from "@/features/auth/emisionDeTokens";
 import { buscarUsuarioPorEmail } from "@/features/usuarios/usuarioRepository";
+import { emailDeAuthDisponible } from "@/shared/lib/emailSender";
 import { consumirIntento } from "@/shared/lib/rateLimiters";
 import { exito, fallo, type ResultadoAccion } from "@/shared/types/resultadoAccion";
 
@@ -19,6 +20,11 @@ export async function solicitarRecuperacionPassword(
   }
 
   const { email } = validacion.data;
+
+  // La disponibilidad es global: responder igual para cualquier email evita enumerar cuentas.
+  if (!emailDeAuthDisponible) {
+    return fallo("El servicio de emails no está disponible. Probá de nuevo más tarde.");
+  }
 
   const limite = await consumirIntento("emailTransaccional", email);
   if (!limite.permitido) {

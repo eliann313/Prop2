@@ -410,7 +410,10 @@
 .login-forgot-link {
   justify-self: end;
   margin-top: -8px;
-  font-size: 12px;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  font-size: 14px;
 }
 
 .login-submit-button {
@@ -433,6 +436,12 @@
   font-size: 14px;
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+
+.reset-help-text {
+  color: #8a8390;
+  font-size: 12px;
+  text-align: center;
 }
 
 .auth-layout-content:has(.recovery-card) .auth-back-link {

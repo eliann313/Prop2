@@ -57,10 +57,23 @@ export async function linkDeVerificacion(email: string): Promise<string> {
   await pool.query(
     `INSERT INTO "token_verificacion" (id, usuario_id, token_hash, tipo, expira_en)
      VALUES ($1, $2, $3, 'verificacion_email', $4)`,
-    [randomUUID(), usuarioId, tokenHash, expiraEn],
+    // La columna es timestamp sin zona. ISO UTC evita que pg aplique el huso local de Windows.
+    [randomUUID(), usuarioId, tokenHash, expiraEn.toISOString()],
   );
 
   return `/verificar-email?token=${encodeURIComponent(tokenEnClaro)}`;
+}
+
+/** Link aislado para probar el navegador; la emisión y el envío reales se cubren en integración. */
+export async function linkDeRecuperacion(email: string): Promise<string> {
+  const usuarioId = await idDeUsuario(email);
+  const { tokenEnClaro, tokenHash, expiraEn } = generarToken("recuperacion_password");
+  await pool.query(
+    `INSERT INTO "token_verificacion" (id, usuario_id, token_hash, tipo, expira_en)
+     VALUES ($1, $2, $3, 'recuperacion_password', $4)`,
+    [randomUUID(), usuarioId, tokenHash, expiraEn.toISOString()],
+  );
+  return `/restablecer-password?token=${encodeURIComponent(tokenEnClaro)}`;
 }
 
 /**
@@ -143,6 +156,25 @@ export async function publicacionesActivasDe(email: string) {
     [email],
   );
   return rows;
+}
+
+/** Dos imágenes de fixture; el navegador intercepta Cloudinary con fotos incluidas en el repo. */
+export async function agregarFotosDePrueba(publicacionId: string) {
+  for (let orden = 0; orden < 2; orden++) {
+    await pool.query(
+      `INSERT INTO "imagen_publicacion"
+       (id, publicacion_id, public_id, url, orden, es_portada)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        randomUUID(),
+        publicacionId,
+        `ui/foto-${orden}`,
+        `https://res.cloudinary.com/demo-e2e/image/upload/ui/foto-${orden}.jpg`,
+        orden,
+        orden === 0,
+      ],
+    );
+  }
 }
 
 export async function mensajesDePublicacion(publicacionId: string) {

@@ -106,6 +106,27 @@ La aplicación estará lista en `http://localhost:3000`.
 
 ## 🧪 Testing Suite (3 Niveles)
 
+### Autenticación y recuperación de contraseña
+
+Desde el login, **Olvidé mi contraseña** permite pedir un enlace y elegir una contraseña nueva.
+La cuenta debe confirmar su email antes de entrar con credenciales; si no lo hizo, el login
+ofrece reenviar la confirmación. El botón de Google aparece cuando están configuradas ambas
+credenciales OAuth.
+
+En producción, configurá **RESEND_API_KEY** y **EMAIL_FROM** con un remitente verificado. Si faltan,
+recuperación y reenvío informan que el servicio de emails está indisponible. Los enlaces privados
+solo se imprimen en consola en desarrollo/test, nunca en un build de producción.
+
+Los enlaces de recuperación vencen a la hora y son de un solo uso. Su emisión y consumo se
+serializan por cuenta: un pedido nuevo invalida los anteriores, y el cambio de contraseña y la
+confirmación del email se guardan en una sola transacción. Cambiar la contraseña también revoca
+las sesiones anteriores. Las sesiones emitidas antes de incorporar esta comprobación requieren
+iniciar sesión nuevamente una vez.
+
+Los E2E usan exclusivamente Postgres de test y no envían emails ni suben archivos reales. La
+suite incluye login, recuperación con revocación de otra sesión, publicación, búsqueda/contacto,
+paginación fuera de rango y la ficha a 320, 375, 768, 1024 y 1440 px.
+
 El proyecto cuenta con una cobertura completa dividida en tres niveles:
 
 | Nivel           | Comando                    | Descripción                                                         |

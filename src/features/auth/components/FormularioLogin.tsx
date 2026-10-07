@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import {
   iniciarSesionConCredenciales,
@@ -19,17 +19,26 @@ import { Button } from "@/shared/components/ui/button";
 type Props = {
   /** Ruta interna a la que volver después de entrar (la pone el proxy en la query). */
   volverA?: string;
+  /** Auth.js devuelve errores OAuth en la URL; el detalle nunca se expone en pantalla. */
+  errorAuth?: boolean;
 };
 
-export function FormularioLogin({ volverA }: Props) {
-  const [resultado, setResultado] = useState<ResultadoLogin | null>(null);
+export function FormularioLogin({ volverA, errorAuth = false }: Props) {
+  const [resultado, setResultado] = useState<ResultadoLogin | null>(() =>
+    errorAuth
+      ? {
+          ok: false,
+          mensaje: "No pudimos iniciar sesión. Revisá tus datos e intentá de nuevo.",
+        }
+      : null,
+  );
   const [enviando, iniciarEnvio] = useTransition();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    getValues,
+    control,
   } = useForm<DatosLogin>({ resolver: zodResolver(schemaLogin) });
 
   function onSubmit(datos: DatosLogin) {
@@ -45,6 +54,7 @@ export function FormularioLogin({ volverA }: Props) {
   // comparando el texto del mensaje: reescribir un mensaje no debería romper este botón.
   const faltaVerificar =
     resultado?.ok === false && esEmailSinVerificar(resultado.datos?.codigo);
+  const emailIngresado = useWatch({ control, name: "email", defaultValue: "" });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
@@ -54,7 +64,7 @@ export function FormularioLogin({ volverA }: Props) {
         <Link
           href={{
             pathname: RUTAS.verificarEmail,
-            query: { email: getValues("email") },
+            query: { email: emailIngresado },
           }}
           className="text-sm underline underline-offset-4"
         >
@@ -79,7 +89,10 @@ export function FormularioLogin({ volverA }: Props) {
         {...register("password")}
       />
 
-      <Link href={RUTAS.recuperarPassword} className="login-forgot-link">
+      <Link
+        href={{ pathname: RUTAS.recuperarPassword, query: { email: emailIngresado } }}
+        className="login-forgot-link"
+      >
         Olvidé mi contraseña
       </Link>
 

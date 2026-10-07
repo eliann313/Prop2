@@ -14,7 +14,11 @@ import { CampoTexto } from "@/shared/components/CampoTexto";
 import { Button } from "@/shared/components/ui/button";
 import type { ResultadoAccion } from "@/shared/types/resultadoAccion";
 
-export function FormularioRecuperarPassword() {
+type Props = {
+  emailInicial?: string;
+};
+
+export function FormularioRecuperarPassword({ emailInicial = "" }: Props) {
   const [resultado, setResultado] = useState<ResultadoAccion | null>(null);
   const [enviando, iniciarEnvio] = useTransition();
 
@@ -24,6 +28,7 @@ export function FormularioRecuperarPassword() {
     formState: { errors },
   } = useForm<DatosSolicitudRecuperacion>({
     resolver: zodResolver(schemaSolicitudRecuperacion),
+    defaultValues: { email: emailInicial },
   });
 
   function onSubmit(datos: DatosSolicitudRecuperacion) {

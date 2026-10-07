@@ -13,17 +13,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card";
+import { googleHabilitado } from "@/shared/lib/serverEnv";
 
 export const metadata: Metadata = { title: "Iniciar sesión" };
 
 export default async function PaginaLogin(props: PageProps<"/login">) {
   // En Next 16 `searchParams` es una Promise: el acceso sincrónico se removió (breaking change
   // de la v15 que en la 16 dejó de tener compatibilidad temporal).
-  const { volverA } = await props.searchParams;
+  const { volverA, error } = await props.searchParams;
 
   await redirigirSiYaHaySesion();
 
   const destino = typeof volverA === "string" ? volverA : undefined;
+  const errorAuth = typeof error === "string" && error.length > 0;
 
   return (
     <Card className="login-card">
@@ -35,13 +37,17 @@ export default async function PaginaLogin(props: PageProps<"/login">) {
       </CardHeader>
 
       <CardContent className="login-card-content">
-        <BotonGoogle volverA={destino} />
-        <div className="login-divider">
-          <span />
-          <span>o</span>
-          <span />
-        </div>
-        <FormularioLogin volverA={destino} />
+        {googleHabilitado ? (
+          <>
+            <BotonGoogle volverA={destino} />
+            <div className="login-divider" aria-hidden="true">
+              <span />
+              <span>o</span>
+              <span />
+            </div>
+          </>
+        ) : null}
+        <FormularioLogin volverA={destino} errorAuth={errorAuth} />
       </CardContent>
 
       <CardFooter className="login-card-footer">
