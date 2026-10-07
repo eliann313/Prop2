@@ -133,6 +133,7 @@ export default async function PaginaPublicaciones(props: PageProps<"/publicacion
                   key={publicacion.id}
                   publicacion={publicacion}
                   cotizacion={cotizacion}
+                  variante="horizontal"
                   accion={
                     <BotonFavorito publicacionId={publicacion.id} volverA={volverA} />
                   }

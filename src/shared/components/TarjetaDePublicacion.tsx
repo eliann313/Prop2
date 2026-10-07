@@ -1,3 +1,4 @@
+import { MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -52,6 +53,9 @@ type Props = {
   accion?: ReactNode;
   /** Marca un favorito cuya publicación ya no está activa (6.5). */
   noDisponible?: boolean;
+  /** Variante de diseño: "vertical" (por defecto en grillas) u "horizontal" (en listas de búsqueda). */
+  variante?: "vertical" | "horizontal";
+  className?: string;
 };
 
 export function TarjetaDePublicacion({
@@ -59,6 +63,8 @@ export function TarjetaDePublicacion({
   cotizacion,
   accion,
   noDisponible = false,
+  variante = "vertical",
+  className,
 }: Props) {
   const moneda = publicacion.moneda === "USD" ? "USD" : "ARS";
   const equivalencia = formatearEquivalencia(publicacion.precio, moneda, cotizacion);
@@ -73,71 +79,123 @@ export function TarjetaDePublicacion({
       : null,
   ].filter(Boolean);
 
+  const esHorizontal = variante === "horizontal";
+
   return (
-    <Card className="property-result-card">
-      {/* Fuera del Link a propósito: un <button> adentro de un <a> es HTML inválido, y en la
-          práctica hace que el click en el corazón navegue a la publicación. */}
+    <Card
+      className={cn(
+        "group relative flex flex-col overflow-hidden rounded-xl border border-[#e9e4e0] bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg",
+        esHorizontal && "sm:flex-row",
+        className,
+      )}
+    >
+      {/* Botón de acción / favorito superpuesto en la esquina superior derecha */}
       {accion}
 
       {noDisponible ? (
-        <Badge variant="outline" className="bg-background/90 absolute top-2 left-2 z-10">
+        <Badge
+          variant="outline"
+          className="bg-background/95 text-foreground absolute top-3 left-3 z-10 text-xs font-semibold shadow-sm"
+        >
           Ya no disponible
         </Badge>
       ) : null}
 
       <Link
         href={`${RUTAS.publicaciones}/${rutaDePublicacion(publicacion.id, publicacion.titulo)}`}
-        className={cn("grid gap-3", noDisponible && "opacity-60")}
+        className={cn(
+          "flex flex-1 flex-col",
+          esHorizontal && "sm:grid sm:grid-cols-[220px_1fr] sm:items-stretch",
+          noDisponible && "opacity-60",
+        )}
       >
-        <div className="property-result-image">
+        {/* Contenedor de la imagen */}
+        <div
+          className={cn(
+            "relative w-full overflow-hidden bg-[#f3efe9]",
+            esHorizontal
+              ? "aspect-[16/10] sm:aspect-auto sm:h-full sm:min-h-[190px]"
+              : "aspect-[16/10]",
+          )}
+        >
           {portada ? (
-            // `sizes` no es opcional con `fill`: sin él Next pide la imagen al ancho del
-            // viewport, y en una grilla de tres columnas eso es descargar el triple de bytes
-            // de los que se ven. Los valores siguen a los breakpoints de la grilla de abajo.
             <Image
               src={portada}
-              alt=""
+              alt={publicacion.titulo}
               fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-              className="property-result-image-content"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             />
           ) : (
-            <div className="property-result-image-empty">Sin foto</div>
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#f8f5f1] to-[#ede6dc] text-xs font-medium text-[#8a8390]">
+              Sin foto
+            </div>
+          )}
+
+          {/* Badge de Venta / Alquiler sobre la foto */}
+          {!noDisponible && (
+            <div className="absolute top-3 left-3 z-10">
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold shadow-xs backdrop-blur-md",
+                  publicacion.operacion === "venta"
+                    ? "bg-[#581845]/90 text-white"
+                    : "bg-[#ffc300]/95 text-[#581845]",
+                )}
+              >
+                {publicacion.operacion === "venta" ? "Venta" : "Alquiler"}
+              </span>
+            </div>
           )}
         </div>
 
-        <CardContent className="property-result-content">
-          <div className="property-result-summary">
+        {/* Contenido de la tarjeta con espacio suficiente y sin texto cortado */}
+        <CardContent className="flex flex-1 flex-col justify-between p-4 sm:p-5">
+          <div className="space-y-2">
+            {/* Precio principal y equivalencia */}
             <div>
-              <p className="property-result-price">
+              <p className="text-xl font-bold tracking-tight text-[#2b2530]">
                 {formatearPrecio(publicacion.precio, moneda)}
                 {publicacion.operacion === "alquiler" ? (
-                  <span className="property-result-rent-suffix"> / mes</span>
+                  <span className="text-xs font-normal text-[#8a8390]"> / mes</span>
                 ) : null}
               </p>
-              {/* La equivalencia va debajo y en chico a propósito: es un dato de referencia,
-                  no el precio. El precio es el que cargó el vendedor, en su moneda. */}
               {equivalencia ? (
-                <p className="property-result-equivalence">{equivalencia}</p>
+                <p className="mt-0.5 text-xs text-[#8a8390]">{equivalencia}</p>
               ) : null}
             </div>
-            <Badge variant="secondary" className="property-result-badge">
-              {publicacion.operacion === "venta" ? "Venta" : "Alquiler"}
-            </Badge>
+
+            {/* Título claro con hasta 2 líneas */}
+            <h3 className="line-clamp-2 text-[15px] leading-snug font-semibold text-[#2b2530] transition-colors group-hover:text-[#581845]">
+              {publicacion.titulo}
+            </h3>
+
+            {/* Ubicación y tipo de inmueble */}
+            <p className="flex items-center gap-1.5 text-xs text-[#8a8390]">
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-[#bd9a55]" />
+              <span className="truncate">
+                {ETIQUETAS_TIPO_INMUEBLE[
+                  publicacion.tipoInmueble as keyof typeof ETIQUETAS_TIPO_INMUEBLE
+                ] ?? publicacion.tipoInmueble}
+                {" · "}
+                {publicacion.barrio ? `${publicacion.barrio}, ` : ""}
+                {publicacion.ciudad}
+              </span>
+            </p>
           </div>
 
-          <p className="property-result-title">{publicacion.titulo}</p>
-
-          <p className="property-result-location">
-            {ETIQUETAS_TIPO_INMUEBLE[
-              publicacion.tipoInmueble as keyof typeof ETIQUETAS_TIPO_INMUEBLE
-            ] ?? publicacion.tipoInmueble}{" "}
-            · {publicacion.barrio ? `${publicacion.barrio}, ` : ""}
-            {publicacion.ciudad}
-          </p>
-
+          {/* Características / Detalles (ambientes, dorms, baños, m²) */}
           {detalles.length > 0 ? (
-            <p className="property-result-details">{detalles.join(" · ")}</p>
+            <div className="mt-3 border-t border-[#f0ece7] pt-3 text-xs text-[#6b6572]">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                {detalles.map((detalle, idx) => (
+                  <span key={idx} className="flex items-center gap-2">
+                    {idx > 0 && <span className="text-[#d5cfc7]">•</span>}
+                    <span>{detalle}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
           ) : null}
         </CardContent>
       </Link>
