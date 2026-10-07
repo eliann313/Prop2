@@ -160,7 +160,9 @@ jobs:
   # escribiendo en la base real.
   e2e:
     name: E2E (Playwright)
-    runs-on: ubuntu-latest
+    # Esta imagen ya incluye Chromium y sus librerías de sistema. Se fija la versión para
+    # que el cambio de ubuntu-latest no altere esas dependencias sin revisión.
+    runs-on: ubuntu-24.04
 
     services:
       postgres:
@@ -199,7 +201,11 @@ jobs:
       # cross-browser real lo cubre la pasada manual de 12.4, que además detecta cosas táctiles
       # que ningún runner headless ve.
       - name: Instalar el navegador
-        run: npx playwright install --with-deps chromium
+        # --with-deps vuelve a ejecutar apt-get update, que puede bloquearse en el mirror
+        # de Azure. Solo hace falta descargar la versión de Chromium que pide Playwright:
+        # las librerías de sistema ya vienen en la imagen oficial de Ubuntu 24.04.
+        timeout-minutes: 5
+        run: npx playwright install chromium
 
       - name: Preparar la base
         run: npx prisma migrate deploy && npx tsx prisma/seed.ts
