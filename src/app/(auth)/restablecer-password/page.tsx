@@ -8,6 +8,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card";
@@ -24,38 +25,46 @@ export default async function PaginaRestablecerPassword(
   // gastar un POST, y además el token podría vencer entre que se carga la página y se envía.
   if (typeof token !== "string" || token.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Link inválido</CardTitle>
+      <Card className="login-card recovery-card password-reset-card">
+        <CardHeader className="login-card-header">
+          <CardTitle className="login-card-title">Link inválido</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4">
+        <CardContent className="login-card-content">
           <Alert variant="destructive">
             <AlertDescription>
-              Este link no tiene el token de recuperación. Pedí uno nuevo.
+              Este enlace no tiene un token de recuperación válido. Pedí uno nuevo para
+              continuar.
             </AlertDescription>
           </Alert>
-          <Link
-            href={RUTAS.recuperarPassword}
-            className="text-sm underline underline-offset-4"
-          >
+          <Link href={RUTAS.recuperarPassword} className="recovery-login-link">
             Pedir un link nuevo
           </Link>
         </CardContent>
+        <CardFooter className="login-card-footer recovery-card-footer">
+          <Link href={RUTAS.login} className="recovery-login-link">
+            Volver a iniciar sesión
+          </Link>
+        </CardFooter>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Elegí una nueva contraseña</CardTitle>
-        <CardDescription>
+    <Card className="login-card recovery-card password-reset-card">
+      <CardHeader className="login-card-header">
+        <CardTitle className="login-card-title">Elegí una nueva contraseña</CardTitle>
+        <CardDescription className="login-card-description">
           Después de guardarla vas a poder iniciar sesión con ella.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="login-card-content">
         <FormularioRestablecerPassword token={token} />
       </CardContent>
+      <CardFooter className="login-card-footer recovery-card-footer">
+        <Link href={RUTAS.login} className="recovery-login-link">
+          Volver a iniciar sesión
+        </Link>
+      </CardFooter>
     </Card>
   );
 }

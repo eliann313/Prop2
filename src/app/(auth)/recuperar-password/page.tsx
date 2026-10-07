@@ -14,7 +14,11 @@ import {
 
 export const metadata: Metadata = { title: "Recuperar contraseña" };
 
-export default function PaginaRecuperarPassword() {
+export default async function PaginaRecuperarPassword(
+  props: PageProps<"/recuperar-password">,
+) {
+  const { email } = await props.searchParams;
+
   return (
     <Card className="login-card recovery-card">
       <CardHeader className="login-card-header">
@@ -25,7 +29,9 @@ export default function PaginaRecuperarPassword() {
       </CardHeader>
 
       <CardContent className="login-card-content">
-        <FormularioRecuperarPassword />
+        <FormularioRecuperarPassword
+          emailInicial={typeof email === "string" ? email : ""}
+        />
       </CardContent>
 
       <CardFooter className="login-card-footer recovery-card-footer">

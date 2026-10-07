@@ -200,6 +200,18 @@ export async function buscarPublicaciones(
     LIMIT ${criterios.limite} OFFSET ${criterios.offset}
   `;
 
+  // COUNT(*) OVER() viaja en cada fila. Si el OFFSET cae después de la última coincidencia,
+  // no queda una fila desde la que leer el conteo; consultarlo aparte solo en ese caso permite
+  // corregir una página fuera de rango sin agregar un segundo viaje en las búsquedas normales.
+  const totalFueraDePagina =
+    filas.length === 0 && criterios.offset > 0
+      ? await prisma.$queryRaw<{ total: bigint }[]>`
+          SELECT COUNT(*) AS total
+          FROM publicacion p
+          WHERE ${condiciones(criterios, texto)}
+        `
+      : null;
+
   return {
     resultados: filas.map((fila) => ({
       id: fila.id,
@@ -218,9 +230,10 @@ export async function buscarPublicaciones(
       imagenUrl: fila.imagen_url,
       imagenThumbnail: fila.imagen_thumbnail,
     })),
-    // `COUNT(*) OVER()` es bigint en Postgres, y sin filas no viene ninguna: la página vacía
-    // vale 0 resultados, no "no sé cuántos hay".
-    total: filas.length > 0 ? Number(filas[0].total) : 0,
+    total:
+      filas.length > 0
+        ? Number(filas[0].total)
+        : Number(totalFueraDePagina?.[0]?.total ?? 0),
   };
 }
 

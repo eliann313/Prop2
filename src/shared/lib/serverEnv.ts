@@ -82,7 +82,7 @@ export const env = resultado.data;
 /** Google OAuth solo se registra como provider si están las dos credenciales. */
 export const googleHabilitado = Boolean(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET);
 
-/** Sin API key de Resend, los emails se loguean en consola en vez de enviarse. */
+/** Resend requiere API key y remitente; el fallback de consola solo existe en desarrollo/test. */
 export const emailHabilitado = Boolean(env.RESEND_API_KEY && env.EMAIL_FROM);
 
 /** Sin credenciales de Upstash, el rate limiting queda inactivo (permite todo). */

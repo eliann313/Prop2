@@ -1,5 +1,6 @@
 import { iniciarSesionConGoogle } from "@/features/auth/actions/iniciarSesion";
 import { Button } from "@/shared/components/ui/button";
+import { googleHabilitado } from "@/shared/lib/serverEnv";
 
 type Props = {
   volverA?: string;
@@ -11,6 +12,8 @@ type Props = {
  * excepción a justificar, no el default.
  */
 export function BotonGoogle({ volverA }: Props) {
+  if (!googleHabilitado) return null;
+
   return (
     <form
       action={async () => {

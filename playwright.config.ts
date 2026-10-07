@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 import { URL_BASE_DE_TEST } from "./tests/integration/baseDeTest";
 
 /**
- * E2E de los tres flujos críticos de 12.3.
+ * E2E de autenticación, publicación, búsqueda/contacto y ficha responsive.
  *
  * Corre contra la app levantada en local apuntando al Postgres de Docker, y NO contra el preview
  * deployment de Vercel como propone 12.3. El motivo es concreto: los previews de este proyecto
@@ -22,8 +22,8 @@ export default defineConfig({
   // todos los archivos del worker, así que cerrarlo por archivo se lo saca a los que faltan.
   globalTeardown: "./tests/e2e/teardown.ts",
 
-  // En serie y con un solo worker: los tres flujos comparten la misma base y se pisarían entre
-  // ellos. Paralelizar exigiría una base por worker, que para tres tests no se justifica.
+  // En serie y con un solo worker: los flujos comparten la misma base y se pisarían entre
+  // ellos. Paralelizar exigiría una base por worker.
   fullyParallel: false,
   workers: 1,
 
@@ -68,10 +68,12 @@ export default defineConfig({
       // mail de verdad a un @example.com — o sea que estaba llamando a la API de producción y
       // gastando cuota en cada corrida.
       //
-      // Con las vacías, cada servicio degrada con gracia por su cuenta (ver el README): los
-      // links de verificación salen por consola en vez de por email.
+      // En este build de producción, recuperación/reenvío informan que el email no está
+      // disponible. Los tests inyectan sus propios tokens y nunca imprimen links privados.
       RESEND_API_KEY: "",
       EMAIL_FROM: "",
+      AUTH_GOOGLE_ID: "",
+      AUTH_GOOGLE_SECRET: "",
       // Además de aislar, evita que el limitador voltee la suite: son 5 intentos de login por
       // minuto, y un E2E que reintenta se los come enseguida.
       UPSTASH_REDIS_REST_URL: "",

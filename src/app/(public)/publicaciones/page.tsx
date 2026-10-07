@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { parsearFiltros } from "@/features/busqueda/busquedaSchemas";
 import { BotonFavorito } from "@/features/favoritos/components/BotonFavorito";
@@ -67,6 +68,16 @@ export default async function PaginaPublicaciones(props: PageProps<"/publicacion
   const paginas = totalDePaginas(pagina.total);
   const parametros = aParametros(searchParams);
   const filtrando = hayFiltrosAplicados(criterios);
+
+  // Una página fuera de rango sigue conservando el total real en el repositorio. Si todavía
+  // hay coincidencias, se lleva al visitante a la última página válida manteniendo sus filtros.
+  if (pagina.total > 0 && criterios.pagina > paginas) {
+    redirect(
+      `${RUTAS.publicaciones}${construirQuery(parametros, {
+        pagina: String(paginas),
+      })}`,
+    );
+  }
 
   // La búsqueda entera se preserva para volver acá después del login.
   const volverA = `${RUTAS.publicaciones}${construirQuery(parametros, {})}`;

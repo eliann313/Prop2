@@ -8,6 +8,9 @@ import { emailHabilitado, env } from "@/shared/lib/serverEnv";
 
 const resend = emailHabilitado ? new Resend(env.RESEND_API_KEY) : null;
 
+/** El fallback de consola sirve para desarrollo; nunca reemplaza un email en producción. */
+export const emailDeAuthDisponible = emailHabilitado || env.NODE_ENV !== "production";
+
 export type ResultadoEnvio =
   { enviado: true } | { enviado: false; motivo: "sin-configurar" | "error-proveedor" };
 
@@ -31,6 +34,12 @@ export async function enviarEmail({
   urlDeFallback,
 }: ParametrosEnvio): Promise<ResultadoEnvio> {
   if (!resend) {
+    if (env.NODE_ENV === "production") {
+      console.error(
+        "[email] Servicio sin configurar. Revisar RESEND_API_KEY y EMAIL_FROM.",
+      );
+      return { enviado: false, motivo: "sin-configurar" };
+    }
     console.warn(
       [
         "",
@@ -46,17 +55,22 @@ export async function enviarEmail({
     return { enviado: false, motivo: "sin-configurar" };
   }
 
-  const { error } = await resend.emails.send({
-    from: env.EMAIL_FROM!,
-    to: para,
-    subject: asunto,
-    react: cuerpo,
-  });
+  try {
+    const { error } = await resend.emails.send({
+      from: env.EMAIL_FROM!,
+      to: para,
+      subject: asunto,
+      react: cuerpo,
+    });
 
-  if (error) {
-    // No se propaga la excepción: que falle el envío de un email no debe hacer fallar el
-    // registro del usuario, que ya quedó persistido. El usuario puede pedir el reenvío.
-    console.error("Resend rechazó el envío:", error);
+    if (error) {
+      // No se imprime el payload del proveedor: puede contener destinatarios o links privados.
+      console.error("[email] El proveedor rechazó el envío.");
+      return { enviado: false, motivo: "error-proveedor" };
+    }
+  } catch {
+    // Una caída de red tampoco debe deshacer un registro ya persistido.
+    console.error("[email] No se pudo contactar al proveedor.");
     return { enviado: false, motivo: "error-proveedor" };
   }
 

@@ -21,7 +21,7 @@ export async function firmarSubidaDeImagen(): Promise<ResultadoAccion<FirmaDeSub
     return fallo("La subida de imágenes no está configurada en este entorno.");
   }
 
-  const limite = await consumirIntento("emailTransaccional", `subida:${usuario.id}`);
+  const limite = await consumirIntento("subidaImagen", usuario.id);
   if (!limite.permitido) {
     return fallo("Subiste muchas fotos seguidas. Esperá unos minutos.");
   }

@@ -36,6 +36,10 @@ const limitadores = {
   // Reenvío de verificación y reseteo mandan emails: el límite protege la cuota de Resend
   // además de la cuenta del usuario.
   emailTransaccional: crearLimitador("email-transaccional", 3, "15 m"),
+  // Cada foto necesita su propia firma de Cloudinary. El wizard admite 20 por publicación,
+  // así que este límite deja margen para completar varias publicaciones sin abrir un cupo
+  // ilimitado de firmas por usuario.
+  subidaImagen: crearLimitador("subida-imagen", 60, "15 m"),
   // Contacto: más holgado que los de auth porque consultar por varios inmuebles seguidos es
   // comportamiento normal de alguien buscando casa. Igual frena el envío masivo, que acá
   // además gasta cuota de Resend y le llena la casilla a los vendedores (6.6).
@@ -117,6 +121,6 @@ if (
 ) {
   console.warn(
     "UPSTASH_REDIS_REST_URL/TOKEN no están configuradas en producción: " +
-      "el rate limiting de login, registro y emails está INACTIVO.",
+      "el rate limiting de login, registro, emails y subidas está INACTIVO.",
   );
 }
