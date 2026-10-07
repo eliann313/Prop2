@@ -97,10 +97,13 @@ export async function EncabezadoSitio() {
 
             <div className="h-4 w-[1px] bg-gray-200" />
 
+            {/* Se utiliza "Buscar por tipo de inmueble" en el aria-label para describir con precisión que es un filtro
+                de búsqueda y evitar colisiones de accesibilidad con el campo "Tipo de inmueble" del formulario de
+                publicación (PasoBasicos.tsx), lo que causaba ambigüedad para lectores de pantalla y en tests E2E. */}
             <select
               name="tipo"
               className={CLASES_SELECT_NAV}
-              aria-label="Tipo de inmueble"
+              aria-label="Buscar por tipo de inmueble"
             >
               <option value="">Cualquier tipo</option>
               {TIPOS_INMUEBLE.map((tipo) => (
