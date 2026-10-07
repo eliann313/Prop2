@@ -99,6 +99,7 @@ export default async function PaginaPublicaciones(props: PageProps<"/publicacion
             </summary>
             <div id="search-filter-content" className="search-filters-content">
               <FormularioDeFiltros
+                key={JSON.stringify(parametros)}
                 criterios={criterios}
                 rango={rango}
                 ciudades={[...new Set(ubicaciones.map((u) => u.ciudad))]}
