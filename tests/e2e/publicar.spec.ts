@@ -47,16 +47,15 @@ async function iniciarSesion(page: Page) {
 test("un vendedor publica un inmueble y aparece en la búsqueda", async ({ page }) => {
   await simularSubidaDeImagen(page);
   await iniciarSesion(page);
+  const formulario = page.getByRole("main");
 
   await test.step("paso 1 — datos básicos", async () => {
     await page.goto("/dashboard/publicaciones/nueva");
 
-    // Espera a que el formulario esté renderizado y el select sea visible
-    await expect(page.locator("#tipoInmueble")).toBeVisible();
-
-    // Se selecciona directo por id para evitar ambigüedades con etiquetas similares en el encabezado.
-    await page.locator("#tipoInmueble").selectOption("casa");
-    await page.getByLabel("Operación").selectOption("venta");
+    // El encabezado también permite buscar por tipo, operación y provincia.
+    // Los campos del wizard se buscan dentro del contenido principal.
+    await formulario.getByLabel("Tipo de inmueble", { exact: true }).selectOption("casa");
+    await formulario.getByLabel("Operación", { exact: true }).selectOption("venta");
     await page.getByLabel("Título").fill(TITULO);
     await page
       .getByLabel("Descripción")
@@ -70,7 +69,7 @@ test("un vendedor publica un inmueble y aparece en la búsqueda", async ({ page 
   });
 
   await test.step("paso 2 — ubicación", async () => {
-    await page.getByLabel("Provincia").selectOption("CABA");
+    await formulario.getByLabel("Provincia", { exact: true }).selectOption("CABA");
     await page.getByLabel("Ciudad").fill("Buenos Aires");
     await page.getByLabel("Barrio (opcional)").fill("Villa Crespo");
 
@@ -133,7 +132,7 @@ test("un vendedor publica un inmueble y aparece en la búsqueda", async ({ page 
   await test.step("y se encuentra buscando por texto, sin acentos", async () => {
     // El índice full-text usa `sin_acentos()` sobre título y descripción: "villa crespo" tiene
     // que encontrar la publicación aunque se escriba distinto.
-    await page.goto("/publicaciones?texto=villa+crespo");
+    await page.goto("/publicaciones?q=villa+crespo");
 
     await expect(page.getByRole("link", { name: new RegExp(TITULO, "i") })).toBeVisible();
   });

@@ -41,9 +41,11 @@ export function FormularioRegistro() {
 
   function onSubmit(datos: DatosFormularioRegistro) {
     iniciarEnvio(async () => {
-      // Extraemos confirmarPassword antes de enviar el payload a la Server Action
-      const { confirmarPassword: _, ...datosRegistro } = datos;
-      const respuesta = await registrarUsuario(datosRegistro);
+      const respuesta = await registrarUsuario({
+        nombre: datos.nombre,
+        email: datos.email,
+        password: datos.password,
+      });
       setResultado(respuesta);
       if (respuesta.ok) reset();
     });

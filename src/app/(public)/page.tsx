@@ -15,10 +15,7 @@ import { parsearFiltros } from "@/features/busqueda/busquedaSchemas";
 import { buscarPublicaciones } from "@/features/busqueda/publicacionBusquedaRepository";
 import { construirCriterios } from "@/features/busqueda/services/criteriosDeBusqueda";
 import { obtenerUsuarioActual } from "@/features/auth/sessionQueries";
-import {
-  TarjetaDePublicacion,
-  type PublicacionEnTarjeta,
-} from "@/shared/components/TarjetaDePublicacion";
+import { TarjetaDePublicacion } from "@/shared/components/TarjetaDePublicacion";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -80,115 +77,7 @@ export default async function PaginaHome() {
     obtenerCotizacion(),
   ]);
 
-  const publicacionesDemo: PublicacionEnTarjeta[] = [
-    {
-      id: "demo-1",
-      titulo: "Departamento amplio con balcón en Palermo",
-      precio: 135000,
-      moneda: "USD",
-      operacion: "venta",
-      tipoInmueble: "departamento",
-      provincia: "Buenos Aires",
-      ciudad: "CABA",
-      barrio: "Palermo",
-      ambientes: 3,
-      dormitorios: 2,
-      banios: 2,
-      superficieCubierta: 82,
-      imagenUrl: "/hero-bg.jpg",
-      imagenThumbnail: "/hero-bg.jpg",
-    },
-    {
-      id: "demo-2",
-      titulo: "Casa moderna con patio y jardín",
-      precio: 210000,
-      moneda: "USD",
-      operacion: "venta",
-      tipoInmueble: "casa",
-      provincia: "Buenos Aires",
-      ciudad: "Belgrano",
-      barrio: "Belgrano",
-      ambientes: 4,
-      dormitorios: 3,
-      banios: 2,
-      superficieCubierta: 145,
-      imagenUrl: "/images/casa-belgrano.jpg",
-      imagenThumbnail: "/images/casa-belgrano.jpg",
-    },
-    {
-      id: "demo-3",
-      titulo: "Monoambiente luminoso en Recoleta",
-      precio: 95000,
-      moneda: "USD",
-      operacion: "alquiler",
-      tipoInmueble: "departamento",
-      provincia: "Buenos Aires",
-      ciudad: "CABA",
-      barrio: "Recoleta",
-      ambientes: 1,
-      dormitorios: 1,
-      banios: 1,
-      superficieCubierta: 42,
-      imagenUrl: "/images/mendoza.jpg",
-      imagenThumbnail: "/images/mendoza.jpg",
-    },
-    {
-      id: "demo-4",
-      titulo: "PH con terraza y vista panorámica",
-      precio: 280000,
-      moneda: "USD",
-      operacion: "venta",
-      tipoInmueble: "ph",
-      provincia: "Buenos Aires",
-      ciudad: "CABA",
-      barrio: "Villa Crespo",
-      ambientes: 4,
-      dormitorios: 3,
-      banios: 2,
-      superficieCubierta: 120,
-      imagenUrl: "/hero-bg.jpg",
-      imagenThumbnail: "/hero-bg.jpg",
-    },
-    {
-      id: "demo-5",
-      titulo: "Departamento con cochera en Nordelta",
-      precio: 175000,
-      moneda: "USD",
-      operacion: "venta",
-      tipoInmueble: "departamento",
-      provincia: "Buenos Aires",
-      ciudad: "Nordelta",
-      barrio: "Nordelta",
-      ambientes: 3,
-      dormitorios: 2,
-      banios: 2,
-      superficieCubierta: 96,
-      imagenUrl: "/images/casa-belgrano.jpg",
-      imagenThumbnail: "/images/casa-belgrano.jpg",
-    },
-    {
-      id: "demo-6",
-      titulo: "Alquiler familiar en zona tranquila",
-      precio: 110000,
-      moneda: "ARS",
-      operacion: "alquiler",
-      tipoInmueble: "casa",
-      provincia: "Buenos Aires",
-      ciudad: "La Plata",
-      barrio: "City Bell",
-      ambientes: 4,
-      dormitorios: 3,
-      banios: 2,
-      superficieCubierta: 130,
-      imagenUrl: "/images/mendoza.jpg",
-      imagenThumbnail: "/images/mendoza.jpg",
-    },
-  ];
-
-  const publicacionesAMostrar =
-    ultimas.resultados.length >= 6
-      ? ultimas.resultados.slice(0, 6)
-      : [...ultimas.resultados, ...publicacionesDemo].slice(0, 6);
+  const publicacionesAMostrar = ultimas.resultados.slice(0, 6);
 
   return (
     <div className="w-full">

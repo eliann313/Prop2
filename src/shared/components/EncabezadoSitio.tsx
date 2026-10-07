@@ -66,7 +66,7 @@ export async function EncabezadoSitio() {
 
       {/* ─── NAVBAR PRINCIPAL BLANCO ────────────────────────────────────── */}
       <nav className="border-b border-gray-100 bg-white px-4 py-3.5 sm:px-8">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
           {/* Logo claro: el navbar tiene fondo blanco y el SVG conserva su proporción 10:3. */}
           <Link href={RUTAS.home} className="flex shrink-0 items-center">
             <Image
@@ -89,7 +89,11 @@ export async function EncabezadoSitio() {
               <Search className="h-3.5 w-3.5 text-gray-400" />
             </div>
 
-            <select name="operacion" className={CLASES_SELECT_NAV} aria-label="Operación">
+            <select
+              name="operacion"
+              className={CLASES_SELECT_NAV}
+              aria-label="Buscar por operación"
+            >
               <option value="">Venta y alquiler</option>
               <option value="venta">Venta</option>
               <option value="alquiler">Alquiler</option>
@@ -115,7 +119,11 @@ export async function EncabezadoSitio() {
 
             <div className="h-4 w-[1px] bg-gray-200" />
 
-            <select name="provincia" className={CLASES_SELECT_NAV} aria-label="Provincia">
+            <select
+              name="provincia"
+              className={CLASES_SELECT_NAV}
+              aria-label="Buscar por provincia"
+            >
               <option value="">Todas las provincias</option>
               {PROVINCIAS.map((prov) => (
                 <option key={prov} value={prov}>
@@ -135,7 +143,7 @@ export async function EncabezadoSitio() {
           </form>
 
           {/* Acciones de Usuario / Botones Auth */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {usuario ? (
               <>
                 <span className="text-muted-foreground hidden text-xs sm:inline">
@@ -160,7 +168,7 @@ export async function EncabezadoSitio() {
                   asChild
                   variant="ghost"
                   size="sm"
-                  className="text-bordeaux hover:bg-bordeaux/10 hidden font-medium sm:inline-flex"
+                  className="text-bordeaux hover:bg-bordeaux/10 font-medium"
                 >
                   <Link href={RUTAS.login}>Iniciar sesión</Link>
                 </Button>
