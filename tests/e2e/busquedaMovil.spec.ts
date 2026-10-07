@@ -47,6 +47,7 @@ test("los filtros móviles se despliegan y quitar uno conserva los demás", asyn
   await abrir.focus();
   await page.keyboard.press("Enter");
   await expect(main.getByLabel("Buscar", { exact: true })).toBeVisible();
+  await expect(main.getByLabel("Operación", { exact: true })).toHaveValue("");
   await main.getByLabel("Buscar", { exact: true }).fill("sin-coincidencias");
   await main.getByRole("button", { name: "Aplicar filtros" }).click();
   await expect(
