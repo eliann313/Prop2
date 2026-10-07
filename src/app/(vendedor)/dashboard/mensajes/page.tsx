@@ -80,6 +80,7 @@ export default async function PaginaMensajes(props: PageProps<"/dashboard/mensaj
         </dl>
 
         <form
+          key={JSON.stringify(queryActual)}
           method="GET"
           action={`${RUTAS.dashboard}/mensajes`}
           className="grid gap-3 rounded-lg border p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.7fr)_auto_auto] sm:items-end"

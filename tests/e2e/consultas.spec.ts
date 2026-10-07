@@ -65,6 +65,7 @@ test("el vendedor pagina sus consultas y cambia su estado sin acceder a las ajen
   await expect(main.getByText("1 consulta", { exact: true })).toBeVisible();
   await expect(main.getByText("Persona principal", { exact: true })).toBeVisible();
   await main.getByRole("link", { name: "Quitar filtro", exact: true }).click();
+  await expect(main.getByLabel("Estado", { exact: true })).toHaveValue("");
   await main
     .getByRole("navigation", { name: "Paginación de consultas" })
     .getByRole("link", { name: "Siguiente" })
