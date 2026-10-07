@@ -103,6 +103,7 @@ export async function crearPublicacionActiva(
     ciudad: string;
     precio: number;
     operacion: "venta" | "alquiler";
+    descripcion?: string;
   },
 ) {
   const usuarioId = await idDeUsuario(emailDelVendedor);
@@ -122,7 +123,8 @@ export async function crearPublicacionActiva(
       id,
       usuarioId,
       datos.titulo,
-      "Departamento luminoso con balcón al frente, cocina integrada y placares empotrados.",
+      datos.descripcion ??
+        "Departamento luminoso con balcón al frente, cocina integrada y placares empotrados.",
       datos.operacion,
       datos.precio,
       datos.ciudad,

@@ -31,19 +31,20 @@ export function FormularioRecuperarPassword() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
       <AvisoDeAccion resultado={resultado} />
 
       <CampoTexto
         etiqueta="Email"
         type="email"
         autoComplete="email"
+        className="login-input"
         error={errors.email?.message}
         ayuda="Te enviamos un link para elegir una contraseña nueva."
         {...register("email")}
       />
 
-      <Button type="submit" disabled={enviando}>
+      <Button type="submit" disabled={enviando} className="login-submit-button">
         {enviando ? "Enviando…" : "Enviarme el link"}
       </Button>
     </form>

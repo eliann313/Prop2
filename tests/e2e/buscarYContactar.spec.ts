@@ -33,6 +33,7 @@ test.beforeAll(async () => {
   });
   await crearPublicacionActiva(VENDEDOR, {
     titulo: OTRA,
+    descripcion: "Casa quinta con jardín y piscina en Pilar.",
     ciudad: "Pilar",
     precio: 320000,
     operacion: "alquiler",
@@ -42,6 +43,18 @@ test.beforeAll(async () => {
 test("un visitante sin cuenta busca, filtra, abre el detalle y consulta", async ({
   page,
 }) => {
+  await test.step("la portada solo muestra publicaciones reales", async () => {
+    await page.goto("/");
+    const ultimas = page.locator("section").filter({
+      has: page.getByRole("heading", { name: "Últimas publicaciones", exact: true }),
+    });
+
+    await expect(ultimas.locator('a[href^="/publicaciones/"]')).toHaveCount(2);
+    await expect(
+      ultimas.getByRole("link", { name: new RegExp(BUSCADA, "i") }),
+    ).toBeVisible();
+  });
+
   await test.step("el listado muestra las dos publicaciones activas", async () => {
     await page.goto("/publicaciones");
 
@@ -63,15 +76,19 @@ test("un visitante sin cuenta busca, filtra, abre el detalle y consulta", async 
   await test.step("la búsqueda por texto ignora los acentos", async () => {
     // El índice full-text pasa por `sin_acentos()`: escribir "balcon" sin tilde tiene que
     // encontrar "balcón". Es la razón por la que la migración define esa función.
-    await page.goto("/publicaciones?texto=balcon");
+    await page.goto("/publicaciones");
+    await page.getByRole("main").getByLabel("Buscar", { exact: true }).fill("balcon");
+    await page.getByRole("main").getByRole("button", { name: "Aplicar filtros" }).click();
+    await expect(page).toHaveURL(/[?&]q=balcon(?:&|$)/);
 
     await expect(
       page.getByRole("link", { name: new RegExp(BUSCADA, "i") }),
     ).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(OTRA, "i") })).toHaveCount(0);
   });
 
   await test.step("el detalle abre con la URL canónica", async () => {
-    await page.goto("/publicaciones?texto=balcon");
+    await page.goto("/publicaciones?q=balcon");
     await page.getByRole("link", { name: new RegExp(BUSCADA, "i") }).click();
 
     // El slug tiene que estar en la URL y el uuid al final (9.1). Si el link llevara al uuid
