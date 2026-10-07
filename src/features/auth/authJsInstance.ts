@@ -183,6 +183,7 @@ export const {
       // Rol y estado son datos vivos del usuario; no se acepta la copia vieja del JWT.
       conDatosDeLogin.rol = actual.rol;
       conDatosDeLogin.estado = actual.estado;
+      conDatosDeLogin.name = actual.name;
       return conDatosDeLogin;
     },
   },

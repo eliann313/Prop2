@@ -24,7 +24,7 @@ export function buscarUsuarioPorEmail(email: string) {
 export function buscarUsuarioParaValidarSesion(id: string) {
   return prisma.user.findUnique({
     where: { id },
-    select: { id: true, rol: true, estado: true, passwordHash: true },
+    select: { id: true, name: true, rol: true, estado: true, passwordHash: true },
   });
 }
 
@@ -32,6 +32,26 @@ export function buscarUsuarioPublicoPorId(id: string) {
   return prisma.user.findUnique({
     where: { id },
     select: SELECT_USUARIO_PUBLICO,
+  });
+}
+
+/** Datos que el dueño puede revisar y editar desde su perfil. */
+export function buscarPerfilDeUsuario(id: string) {
+  return prisma.user.findUnique({
+    where: { id },
+    select: { name: true, email: true, telefono: true },
+  });
+}
+
+/** Actualiza exclusivamente campos editables del perfil; email, rol y credenciales quedan fuera. */
+export function actualizarPerfilDeUsuario(
+  id: string,
+  datos: { nombre: string; telefono: string | null },
+) {
+  return prisma.user.update({
+    where: { id },
+    data: { name: datos.nombre, telefono: datos.telefono },
+    select: { name: true, email: true, telefono: true },
   });
 }
 

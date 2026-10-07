@@ -15,6 +15,10 @@ describe("normalizarTelefono", () => {
     expect(normalizarTelefono("+54 9 11 2345 6789")).toBe("5491123456789");
   });
 
+  it("acepta el E.164 que guarda el perfil argentino", () => {
+    expect(normalizarTelefono("+5491123456789")).toBe("5491123456789");
+  });
+
   it("saca el 0 de larga distancia, que no va en formato internacional", () => {
     expect(normalizarTelefono("011 2345 6789")).toBe("541123456789");
   });

@@ -1,4 +1,5 @@
 import { EncabezadoSitio } from "@/shared/components/EncabezadoSitio";
+import { NavegacionDashboard } from "@/features/usuarios/components/NavegacionDashboard";
 import "@/shared/components/shared-components.css";
 
 /**
@@ -20,7 +21,10 @@ export default function LayoutVendedor({ children }: { children: React.ReactNode
   return (
     <>
       <EncabezadoSitio />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">{children}</main>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+        <NavegacionDashboard />
+        {children}
+      </main>
     </>
   );
 }
