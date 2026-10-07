@@ -17,7 +17,8 @@ on:
   push:
     branches: ["main", "develop"]
   pull_request:
-    branches: ["main", "develop"]
+    # También analiza PRs encadenadas antes de integrarlas en main o develop.
+    branches: ["**"]
   schedule:
     - cron: "31 22 * * 3"
 

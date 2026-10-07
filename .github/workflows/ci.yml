@@ -1,9 +1,10 @@
 name: CI
 
-# Corre en PRs hacia develop y main, y en los push directos a esas ramas (13.6).
+# Valida todas las PRs, incluidas las que dependen de otra rama. Los push directos
+# siguen limitados a las ramas de integración (13.6).
 on:
   pull_request:
-    branches: [develop, main]
+    branches: ["**"]
   push:
     branches: [develop, main]
 
