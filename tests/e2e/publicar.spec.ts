@@ -49,6 +49,11 @@ test("un vendedor publica un inmueble y aparece en la búsqueda", async ({ page 
   await iniciarSesion(page);
 
   await test.step("paso 1 — datos básicos", async () => {
+    await page.goto("/dashboard/publicaciones/nueva");
+
+    // Espera a que el formulario esté renderizado y el select sea visible
+    await expect(page.locator("#tipoInmueble")).toBeVisible();
+
     // Se selecciona directo por id para evitar ambigüedades con etiquetas similares en el encabezado.
     await page.locator("#tipoInmueble").selectOption("casa");
     await page.getByLabel("Operación").selectOption("venta");
