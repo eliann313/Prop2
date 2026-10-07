@@ -21,6 +21,14 @@
   box-shadow: 0 4px 18px rgb(43 37 48 / 8%);
 }
 
+.search-filters-summary {
+  display: none;
+}
+
+.search-filters-content {
+  display: block;
+}
+
 .search-filter-form {
   display: grid;
   gap: 18px;
@@ -34,7 +42,7 @@
 .search-filter-field label,
 .search-filter-field legend {
   color: #1e3557;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -62,13 +70,13 @@
 .search-filters input[type="number"] {
   width: 100%;
   min-width: 0;
-  height: 32px;
+  min-height: 44px;
   border: 1px solid #e9e4e0;
   border-radius: 6px;
   background: #fff;
-  padding: 4px 9px;
+  padding: 8px 10px;
   color: #2b2530;
-  font-size: 12px;
+  font-size: 16px;
   outline: none;
 }
 
@@ -85,7 +93,7 @@
 .search-filter-options > div {
   display: flex;
   gap: 12px;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .search-filter-options {
@@ -102,7 +110,7 @@
   align-items: center;
   gap: 5px;
   color: #2b2530;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .search-filter-checkbox {
@@ -115,7 +123,7 @@
 .search-filter-options p {
   margin: 0;
   color: #8a8390;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
@@ -127,11 +135,11 @@
 
 .search-filter-actions button {
   width: 100%;
-  height: 30px;
+  min-height: 44px;
   border-radius: 6px;
   background: #5a1b48;
   color: #fff;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .search-results {
@@ -164,6 +172,57 @@
   margin-top: 8px;
   background: #5a1b48;
   content: "";
+}
+
+.search-active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-active-filters-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.search-active-filter {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #e9e4e0;
+  border-radius: 999px;
+  background: #fffaf0;
+  padding: 6px 10px;
+  color: #5a1b48;
+  font-size: 13px;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+.search-active-filter:hover {
+  border-color: #bd9a55;
+  background: #fff5df;
+}
+
+.search-active-filter:focus-visible,
+.search-clear-filters:focus-visible {
+  outline: 2px solid #bd9a55;
+  outline-offset: 2px;
+}
+
+.search-active-filter svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.search-clear-filters {
+  min-height: 36px;
+  color: #5a1b48;
+  font-size: 13px;
 }
 
 .search-page-note {
@@ -206,7 +265,84 @@
 
   .search-filters {
     position: static;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .search-filters-summary {
+    display: grid;
+    min-height: 48px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 2px 12px;
+    padding: 8px 12px;
+    color: #5a1b48;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .search-filters-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .search-filters-summary::after {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    content: "+";
+    color: #bd9a55;
+    font-size: 24px;
+    font-weight: 500;
+  }
+
+  .search-filters-disclosure[open] > .search-filters-summary::after {
+    content: "−";
+  }
+
+  .search-filters-summary-title {
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .search-filters-summary-count {
+    color: #706673;
+    font-size: 12px;
+  }
+
+  .search-filters-summary:focus-visible {
+    outline: 2px solid #bd9a55;
+    outline-offset: -3px;
+  }
+
+  .search-filters-content {
+    border-top: 1px solid #e9e4e0;
+    padding: 14px 12px;
+  }
+
+  .search-filter-form {
+    gap: 16px;
+  }
+
+  .search-filter-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: #fff;
+    padding-block: 8px;
+  }
+
+  .search-filter-actions button {
+    width: auto;
+    min-width: 145px;
+    flex: 1;
+  }
+
+  .search-active-filters {
+    align-items: flex-start;
+  }
+
+  .search-active-filters-list {
+    width: 100%;
   }
 }
 
@@ -215,5 +351,16 @@
     grid-template-columns: 250px minmax(0, 1fr);
     gap: 20px;
     padding-inline: 16px;
+  }
+}
+
+@media (min-width: 641px) {
+  .search-filters-disclosure:not([open]) > .search-filters-content {
+    display: block;
+  }
+
+  .search-filters-disclosure:not([open])::details-content {
+    display: block;
+    content-visibility: visible;
   }
 }

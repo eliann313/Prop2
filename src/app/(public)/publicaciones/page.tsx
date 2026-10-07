@@ -6,6 +6,7 @@ import { parsearFiltros } from "@/features/busqueda/busquedaSchemas";
 import { BotonFavorito } from "@/features/favoritos/components/BotonFavorito";
 import { FavoritosProvider } from "@/features/favoritos/components/FavoritosProvider";
 import { FormularioDeFiltros } from "@/features/busqueda/components/FormularioDeFiltros";
+import { FiltrosActivos } from "@/features/busqueda/components/FiltrosActivos";
 import { Paginador } from "@/features/busqueda/components/Paginador";
 import {
   buscarPublicaciones,
@@ -86,11 +87,25 @@ export default async function PaginaPublicaciones(props: PageProps<"/publicacion
     <FavoritosProvider idsEnPagina={pagina.resultados.map((resultado) => resultado.id)}>
       <div className="search-page">
         <aside className="search-filters">
-          <FormularioDeFiltros
-            criterios={criterios}
-            rango={rango}
-            ciudades={[...new Set(ubicaciones.map((u) => u.ciudad))]}
-          />
+          <details className="search-filters-disclosure">
+            <summary
+              className="search-filters-summary"
+              aria-controls="search-filter-content"
+            >
+              <span className="search-filters-summary-title">Filtros de búsqueda</span>
+              <span className="search-filters-summary-count">
+                {filtrando ? "Filtros aplicados" : "Elegí zona, precio y más"}
+              </span>
+            </summary>
+            <div id="search-filter-content" className="search-filters-content">
+              <FormularioDeFiltros
+                key={JSON.stringify(parametros)}
+                criterios={criterios}
+                rango={rango}
+                ciudades={[...new Set(ubicaciones.map((u) => u.ciudad))]}
+              />
+            </div>
+          </details>
         </aside>
 
         <section className="search-results">
@@ -106,6 +121,8 @@ export default async function PaginaPublicaciones(props: PageProps<"/publicacion
               </p>
             ) : null}
           </div>
+
+          <FiltrosActivos criterios={criterios} parametros={parametros} />
 
           {enLaOtraMoneda > 0 ? (
             <p className="search-page-note">
