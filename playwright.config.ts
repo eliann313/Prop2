@@ -72,6 +72,11 @@ export default defineConfig({
       // disponible. Los tests inyectan sus propios tokens y nunca imprimen links privados.
       RESEND_API_KEY: "",
       EMAIL_FROM: "",
+      EMAIL_PROVIDER: "resend",
+      SMTP_HOST: "",
+      SMTP_PORT: "",
+      SMTP_USER: "",
+      SMTP_PASSWORD: "",
       AUTH_GOOGLE_ID: "",
       AUTH_GOOGLE_SECRET: "",
       // Además de aislar, evita que el limitador voltee la suite: son 5 intentos de login por
