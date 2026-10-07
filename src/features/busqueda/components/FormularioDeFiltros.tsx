@@ -11,6 +11,17 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { RUTAS } from "@/shared/rutas";
+import {
+  ArrowLeftRight,
+  BedDouble,
+  Building2,
+  CarFront,
+  DollarSign,
+  Grid2X2,
+  ListFilter,
+  MapPin,
+  Search,
+} from "lucide-react";
 
 // Formulario de filtros: un <form method="GET"> nativo, no estado de cliente.
 //
@@ -22,8 +33,7 @@ import { RUTAS } from "@/shared/rutas";
 // con un portal y NO manda un valor en un formulario nativo. Habría que sostenerlo con estado
 // de cliente e inputs ocultos, o sea perder exactamente lo que este enfoque gana.
 
-const CLASES_SELECT =
-  "border-input bg-transparent dark:bg-input/30 h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none";
+const CLASES_SELECT = "search-filter-control";
 
 type Props = {
   criterios: CriteriosDeBusqueda;
@@ -46,9 +56,12 @@ export function FormularioDeFiltros({ criterios, rango, ciudades }: Props) {
         : "USD";
 
   return (
-    <form method="GET" action={RUTAS.publicaciones} className="grid gap-5">
-      <div className="grid gap-1">
-        <Label htmlFor="q">Buscar</Label>
+    <form method="GET" action={RUTAS.publicaciones} className="search-filter-form">
+      <div className="search-filter-field">
+        <Label htmlFor="q" className="search-filter-label">
+          <Search aria-hidden="true" />
+          Buscar
+        </Label>
         <Input
           id="q"
           name="q"
@@ -58,8 +71,11 @@ export function FormularioDeFiltros({ criterios, rango, ciudades }: Props) {
         />
       </div>
 
-      <div className="grid gap-1">
-        <Label htmlFor="operacion">Operación</Label>
+      <div className="search-filter-field">
+        <Label htmlFor="operacion" className="search-filter-label">
+          <ArrowLeftRight aria-hidden="true" />
+          Operación
+        </Label>
         <select
           id="operacion"
           name="operacion"
@@ -72,8 +88,11 @@ export function FormularioDeFiltros({ criterios, rango, ciudades }: Props) {
         </select>
       </div>
 
-      <div className="grid gap-1">
-        <Label htmlFor="tipo">Tipo</Label>
+      <div className="search-filter-field">
+        <Label htmlFor="tipo" className="search-filter-label">
+          <Building2 aria-hidden="true" />
+          Tipo
+        </Label>
         <select
           id="tipo"
           name="tipo"
@@ -89,8 +108,11 @@ export function FormularioDeFiltros({ criterios, rango, ciudades }: Props) {
         </select>
       </div>
 
-      <div className="grid gap-1">
-        <Label htmlFor="provincia">Provincia</Label>
+      <div className="search-filter-field">
+        <Label htmlFor="provincia" className="search-filter-label">
+          <MapPin aria-hidden="true" />
+          Provincia
+        </Label>
         <select
           id="provincia"
           name="provincia"
@@ -110,8 +132,11 @@ export function FormularioDeFiltros({ criterios, rango, ciudades }: Props) {
           exacta para poder usar el índice, así que ofrecer una ciudad que nadie cargó sería
           ofrecer un filtro que garantiza cero resultados. */}
       {ciudades.length > 0 ? (
-        <div className="grid gap-1">
-          <Label htmlFor="ciudad">Ciudad</Label>
+        <div className="search-filter-field">
+          <Label htmlFor="ciudad" className="search-filter-label">
+            <Building2 aria-hidden="true" />
+            Ciudad
+          </Label>
           <select
             id="ciudad"
             name="ciudad"
@@ -128,11 +153,14 @@ export function FormularioDeFiltros({ criterios, rango, ciudades }: Props) {
         </div>
       ) : null}
 
-      <fieldset className="grid gap-2">
-        <legend className="mb-1 text-sm font-medium">Moneda</legend>
-        <div className="flex gap-3 text-sm">
+      <fieldset className="search-filter-options">
+        <legend className="search-filter-label">
+          <DollarSign aria-hidden="true" />
+          Moneda
+        </legend>
+        <div>
           {(["USD", "ARS"] as const).map((opcion) => (
-            <label key={opcion} className="flex items-center gap-2">
+            <label key={opcion}>
               <input
                 type="radio"
                 name="moneda"
@@ -144,9 +172,7 @@ export function FormularioDeFiltros({ criterios, rango, ciudades }: Props) {
             </label>
           ))}
         </div>
-        <p className="text-muted-foreground text-xs">
-          El rango de precio aplica sobre publicaciones en esta moneda.
-        </p>
+        <p>El rango de precio aplica sobre publicaciones en esta moneda.</p>
       </fieldset>
 
       {/* Sin publicaciones en esta moneda no hay rango que mostrar, y con una sola el mínimo y
@@ -161,9 +187,12 @@ export function FormularioDeFiltros({ criterios, rango, ciudades }: Props) {
         />
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="grid gap-1">
-          <Label htmlFor="ambientes">Ambientes</Label>
+      <div className="search-filter-columns">
+        <div className="search-filter-field">
+          <Label htmlFor="ambientes" className="search-filter-label">
+            <Grid2X2 aria-hidden="true" />
+            Ambientes
+          </Label>
           <select
             id="ambientes"
             name="ambientes"
@@ -179,8 +208,11 @@ export function FormularioDeFiltros({ criterios, rango, ciudades }: Props) {
           </select>
         </div>
 
-        <div className="grid gap-1">
-          <Label htmlFor="dormitorios">Dormitorios</Label>
+        <div className="search-filter-field">
+          <Label htmlFor="dormitorios" className="search-filter-label">
+            <BedDouble aria-hidden="true" />
+            Dormitorios
+          </Label>
           <select
             id="dormitorios"
             name="dormitorios"
@@ -197,7 +229,7 @@ export function FormularioDeFiltros({ criterios, rango, ciudades }: Props) {
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm">
+      <label className="search-filter-checkbox">
         <input
           type="checkbox"
           name="cochera"
@@ -205,11 +237,15 @@ export function FormularioDeFiltros({ criterios, rango, ciudades }: Props) {
           defaultChecked={criterios.soloConCochera}
           className="accent-primary size-4"
         />
+        <CarFront aria-hidden="true" />
         Con cochera
       </label>
 
-      <div className="grid gap-1">
-        <Label htmlFor="orden">Ordenar por</Label>
+      <div className="search-filter-field">
+        <Label htmlFor="orden" className="search-filter-label">
+          <ListFilter aria-hidden="true" />
+          Ordenar por
+        </Label>
         <select
           id="orden"
           name="orden"
@@ -224,7 +260,7 @@ export function FormularioDeFiltros({ criterios, rango, ciudades }: Props) {
         </select>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="search-filter-actions flex flex-wrap gap-2">
         <Button type="submit">Aplicar filtros</Button>
         <Button asChild variant="ghost">
           <a href={RUTAS.publicaciones}>Limpiar</a>

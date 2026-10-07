@@ -47,7 +47,7 @@ export function FormularioLogin({ volverA }: Props) {
     resultado?.ok === false && esEmailSinVerificar(resultado.datos?.codigo);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
       <AvisoDeAccion resultado={resultado} />
 
       {faltaVerificar ? (
@@ -66,6 +66,7 @@ export function FormularioLogin({ volverA }: Props) {
         etiqueta="Email"
         type="email"
         autoComplete="email"
+        className="login-input"
         error={errors.email?.message}
         {...register("email")}
       />
@@ -73,20 +74,18 @@ export function FormularioLogin({ volverA }: Props) {
         etiqueta="Contraseña"
         type="password"
         autoComplete="current-password"
+        className="login-input"
         error={errors.password?.message}
         {...register("password")}
       />
 
-      <Button type="submit" disabled={enviando}>
-        {enviando ? "Entrando…" : "Iniciar sesión"}
-      </Button>
-
-      <Link
-        href={RUTAS.recuperarPassword}
-        className="text-muted-foreground text-sm underline underline-offset-4"
-      >
+      <Link href={RUTAS.recuperarPassword} className="login-forgot-link">
         Olvidé mi contraseña
       </Link>
+
+      <Button type="submit" disabled={enviando} className="login-submit-button">
+        {enviando ? "Entrando…" : "Iniciar sesión"}
+      </Button>
     </form>
   );
 }

@@ -73,8 +73,8 @@ export default async function PaginaPublicaciones(props: PageProps<"/publicacion
 
   return (
     <FavoritosProvider idsEnPagina={pagina.resultados.map((resultado) => resultado.id)}>
-      <div className="grid gap-8 lg:grid-cols-[280px_1fr] lg:items-start">
-        <aside className="lg:sticky lg:top-6">
+      <div className="search-page">
+        <aside className="search-filters">
           <FormularioDeFiltros
             criterios={criterios}
             rango={rango}
@@ -82,22 +82,22 @@ export default async function PaginaPublicaciones(props: PageProps<"/publicacion
           />
         </aside>
 
-        <section className="grid gap-4">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">
+        <section className="search-results">
+          <div className="search-results-heading">
+            <h1>
               {pagina.total === 0
                 ? "Sin resultados"
                 : `${pagina.total} ${pagina.total === 1 ? "publicación" : "publicaciones"}`}
             </h1>
             {paginas > 1 ? (
-              <p className="text-muted-foreground text-sm">
+              <p className="search-page-note">
                 Página {criterios.pagina} de {paginas}
               </p>
             ) : null}
           </div>
 
           {enLaOtraMoneda > 0 ? (
-            <p className="text-muted-foreground text-sm">
+            <p className="search-page-note">
               Hay {enLaOtraMoneda}{" "}
               {enLaOtraMoneda === 1 ? "publicación" : "publicaciones"} en{" "}
               {otraMoneda === "USD" ? "dólares" : "pesos"} que cumplen el resto de los
@@ -112,8 +112,8 @@ export default async function PaginaPublicaciones(props: PageProps<"/publicacion
           ) : null}
 
           {pagina.resultados.length === 0 ? (
-            <div className="grid gap-3 rounded-lg border border-dashed p-8 text-center">
-              <p className="text-muted-foreground text-sm">
+            <div className="search-empty-state">
+              <p>
                 {filtrando
                   ? "Ninguna publicación cumple con estos filtros."
                   : "Todavía no hay publicaciones activas."}
@@ -127,12 +127,13 @@ export default async function PaginaPublicaciones(props: PageProps<"/publicacion
               ) : null}
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="property-results-grid">
               {pagina.resultados.map((publicacion) => (
                 <TarjetaDePublicacion
                   key={publicacion.id}
                   publicacion={publicacion}
                   cotizacion={cotizacion}
+                  variante="horizontal"
                   accion={
                     <BotonFavorito publicacionId={publicacion.id} volverA={volverA} />
                   }
