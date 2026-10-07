@@ -28,6 +28,7 @@ test("una cuenta nueva se registra, verifica su email y entra", async ({ page })
     // Se usa { exact: true } porque Playwright busca por substring por defecto y coincidiría
     // tanto con "Contraseña" como con el campo "Confirmar contraseña" del formulario de registro.
     await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
+    await page.getByLabel("Confirmar contraseña").fill(PASSWORD);
     await page.getByRole("button", { name: "Crear cuenta" }).click();
 
     // La respuesta es deliberadamente ambigua ("si el email es válido…"): el registro no puede

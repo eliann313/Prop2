@@ -49,9 +49,8 @@ test("un vendedor publica un inmueble y aparece en la búsqueda", async ({ page 
   await iniciarSesion(page);
 
   await test.step("paso 1 — datos básicos", async () => {
-    // Se usa { exact: true } porque Playwright busca por substring por defecto y coincidiría
-    // tanto con el select del formulario ("Tipo de inmueble") como con el del header ("Buscar por tipo de inmueble").
-    await page.getByLabel("Tipo de inmueble", { exact: true }).selectOption("casa");
+    // Se selecciona directo por id para evitar ambigüedades con etiquetas similares en el encabezado.
+    await page.locator("#tipoInmueble").selectOption("casa");
     await page.getByLabel("Operación").selectOption("venta");
     await page.getByLabel("Título").fill(TITULO);
     await page
