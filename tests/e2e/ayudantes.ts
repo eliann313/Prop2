@@ -28,6 +28,18 @@ export async function cerrarBase() {
   await pool.end();
 }
 
+/** Consulta persistida en Postgres de test, sin enviar emails externos. */
+export async function crearConsultaDePrueba(publicacionId: string, nombre: string) {
+  const id = randomUUID();
+  await pool.query(
+    `INSERT INTO "mensaje_contacto"
+      (id, publicacion_id, nombre_contacto, email_contacto, mensaje, medio_contacto)
+     VALUES ($1, $2, $3, 'interesada@example.com', 'Quiero coordinar una visita.', 'formulario')`,
+    [id, publicacionId, nombre],
+  );
+  return id;
+}
+
 async function idDeUsuario(email: string): Promise<string> {
   const { rows } = await pool.query<{ id: string }>(
     'SELECT id FROM "usuario" WHERE email = $1',

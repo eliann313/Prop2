@@ -373,6 +373,14 @@ enum MedioContacto {
   @@map("medio_contacto")
 }
 
+enum EstadoMensajeContacto {
+  nueva
+  leida
+  atendida
+
+  @@map("estado_mensaje_contacto")
+}
+
 model MensajeContacto {
   id            String  @id @default(uuid()) @db.Uuid
   publicacionId String  @map("publicacion_id") @db.Uuid
@@ -385,6 +393,7 @@ model MensajeContacto {
   telefonoContacto String?       @map("telefono_contacto")
   mensaje          String
   medioContacto    MedioContacto @map("medio_contacto")
+  estado           EstadoMensajeContacto @default(nueva)
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -393,5 +402,6 @@ model MensajeContacto {
 
   @@index([publicacionId])
   @@index([usuarioId])
+  @@index([publicacionId, estado, createdAt(sort: Desc)])
   @@map("mensaje_contacto")
 }
