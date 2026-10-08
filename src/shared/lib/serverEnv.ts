@@ -9,10 +9,10 @@ import { z } from "zod";
 // Validación de las variables de entorno del servidor en un solo lugar (8.9 / 13.2).
 //
 // El criterio de qué es obligatorio y qué no: la app tiene que poder levantarse y dejar
-// probar los flujos de auth con solo la base y el secreto de Auth.js. Google OAuth, Resend
-// y Upstash son integraciones que degradan con gracia (ver los helpers de cada una), así que
+// probar los flujos de auth con solo la base y el secreto de Auth.js. Google OAuth, los
+// proveedores de email y Upstash degradan con gracia (ver los helpers de cada una), así que
 // son opcionales — pedirlas de entrada obligaría a cada integrante del equipo a dar de alta
-// tres servicios externos antes de poder correr `npm run dev` una sola vez.
+// servicios externos antes de poder correr `npm run dev` una sola vez.
 const esquemaEnv = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL es obligatoria"),
   DATABASE_URL_UNPOOLED: z.string().optional(),
@@ -29,8 +29,13 @@ const esquemaEnv = z.object({
   AUTH_GOOGLE_ID: z.string().optional(),
   AUTH_GOOGLE_SECRET: z.string().optional(),
 
-  RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().optional(),
+  EMAIL_PROVIDER: z.enum(["resend", "smtp"]).default("resend"),
+  RESEND_API_KEY: z.string().trim().min(1).optional(),
+  EMAIL_FROM: z.string().trim().min(1).optional(),
+  SMTP_HOST: z.string().trim().min(1).optional(),
+  SMTP_PORT: z.enum(["465", "587"]).transform(Number).optional(),
+  SMTP_USER: z.string().trim().min(1).optional(),
+  SMTP_PASSWORD: z.string().trim().min(1).optional(),
 
   UPSTASH_REDIS_REST_URL: z.string().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
@@ -82,8 +87,13 @@ export const env = resultado.data;
 /** Google OAuth solo se registra como provider si están las dos credenciales. */
 export const googleHabilitado = Boolean(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET);
 
-/** Resend requiere API key y remitente; el fallback de consola solo existe en desarrollo/test. */
-export const emailHabilitado = Boolean(env.RESEND_API_KEY && env.EMAIL_FROM);
+/** El proveedor seleccionado requiere todas sus credenciales y un remitente. */
+export const emailHabilitado = Boolean(
+  env.EMAIL_FROM &&
+  (env.EMAIL_PROVIDER === "resend"
+    ? env.RESEND_API_KEY
+    : env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USER && env.SMTP_PASSWORD),
+);
 
 /** Sin credenciales de Upstash, el rate limiting queda inactivo (permite todo). */
 export const rateLimitHabilitado = Boolean(
