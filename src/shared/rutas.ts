@@ -22,4 +22,7 @@ export const RUTAS = {
   mensajes: "/dashboard/mensajes",
   admin: "/admin",
   home: "/",
+  terminos: "/terminos",
+  privacidad: "/privacidad",
+  disclaimer: "/disclaimer",
 } as const;

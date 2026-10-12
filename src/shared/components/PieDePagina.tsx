@@ -23,6 +23,9 @@ export function PieDePagina() {
         <nav className="site-footer-nav" aria-label="Navegación del pie de página">
           <Link href={RUTAS.publicaciones}>Buscar propiedades</Link>
           <Link href={`${RUTAS.dashboard}/publicaciones/nueva`}>Publicar inmueble</Link>
+          <Link href={RUTAS.terminos}>Términos y Condiciones</Link>
+          <Link href={RUTAS.privacidad}>Privacidad</Link>
+          <Link href={RUTAS.disclaimer}>Aviso Legal</Link>
           <Link href={RUTAS.login}>Iniciar sesión</Link>
         </nav>
 

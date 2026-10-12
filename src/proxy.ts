@@ -62,7 +62,14 @@ async function limitarBusqueda(request: NextRequest): Promise<NextResponse | nul
  * que llevan nonce— olvidarse de una la dejaría con la política débil sin que nadie lo note.
  */
 function esRutaCacheable(pathname: string): boolean {
-  if (pathname === RUTAS.home) return true;
+  if (
+    pathname === RUTAS.home ||
+    pathname === RUTAS.terminos ||
+    pathname === RUTAS.privacidad ||
+    pathname === RUTAS.disclaimer
+  ) {
+    return true;
+  }
   // El detalle (`/publicaciones/<id>`), pero no el listado (`/publicaciones`), que depende de
   // los filtros de la URL y ya se renderiza dinámico.
   return pathname.startsWith(`${RUTAS.publicaciones}/`);
