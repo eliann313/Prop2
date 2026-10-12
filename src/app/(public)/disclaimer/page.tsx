@@ -190,7 +190,7 @@ export default function PaginaDisclaimer() {
             envianos la denuncia de forma inmediata a:
           </p>
           <div className="rounded-lg bg-stone-100 p-4 font-mono text-sm text-stone-800">
-            🚨 Correo de seguridad: <strong>seguridad@prop2.com.ar</strong>
+            🚨 Correo de seguridad: <strong>prop2inmuebles@gmail.com</strong>
           </div>
         </section>
       </article>

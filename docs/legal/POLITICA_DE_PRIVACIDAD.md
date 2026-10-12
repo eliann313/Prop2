@@ -11,7 +11,7 @@ En **Prop²** (en adelante, la "Plataforma" o "nosotros") nos tomamos con absolu
 
 - **Responsable:** Prop² (Plataforma Inmobiliaria)
 - **Jurisdicción:** República Argentina
-- **Contacto de Privacidad y Datos Personales:** `privacidad@prop2.com.ar`
+- **Contacto de Privacidad y Datos Personales:** `prop2inmuebles@gmail.com`
 - **Finalidad del registro de bases de datos:** Gestión de usuarios, publicación de avisos clasificados y facilitación del contacto entre partes interesadas en operaciones inmobiliarias.
 
 ---
@@ -103,7 +103,7 @@ De conformidad con los artículos 14, 15 y 16 de la Ley N° 25.326, usted tiene 
 ### Procedimiento para ejercer sus derechos:
 
 Para ejercer cualquiera de estos derechos, el titular deberá enviar un correo electrónico a:  
-📧 **`privacidad@prop2.com.ar`**  
+📧 **`prop2inmuebles@gmail.com`**  
 con el asunto _"Protección de Datos Personales — Ejercicio de Derechos"_, adjuntando:
 
 - Nombre y apellido completos.

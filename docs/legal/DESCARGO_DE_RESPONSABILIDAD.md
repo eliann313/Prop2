@@ -64,5 +64,5 @@ Las herramientas de asistencia por IA disponibles en Prop² facilitan a los prop
 Si detecta un aviso que presuma falso, fotos duplicadas, suplantación de identidad o un intento de estafa:
 
 - Utilice las herramientas de reporte o envíe un correo inmediato a:  
-  🚨 **`seguridad@prop2.com.ar`** indicando el enlace o identificador de la publicación.
+  🚨 **`prop2inmuebles@gmail.com`** indicando el enlace o identificador de la publicación.
 - Nuestro equipo de moderación revisará la denuncia en forma prioritaria para tomar las medidas preventivas correspondientes.

@@ -73,7 +73,7 @@ export default function PaginaPrivacidad() {
                 <h2 className="font-semibold text-stone-900">Derechos ARCO Gratuitos</h2>
                 <p className="mt-1 text-sm text-stone-700">
                   Podés solicitar acceso, rectificación o supresión de tus datos
-                  personales enviando un correo a <code>privacidad@prop2.com.ar</code>.
+                  personales enviando un correo a <code>prop2inmuebles@gmail.com</code>.
                 </p>
               </div>
             </div>
@@ -110,7 +110,7 @@ export default function PaginaPrivacidad() {
             su Decreto Reglamentario N° 1558/2001 y las resoluciones de la Agencia de
             Acceso a la Información Pública (AAIP). El responsable del tratamiento de los
             datos es la plataforma <strong>Prop²</strong>, con contacto en{" "}
-            <code>privacidad@prop2.com.ar</code>.
+            <code>prop2inmuebles@gmail.com</code>.
           </p>
         </section>
 
@@ -180,9 +180,9 @@ export default function PaginaPrivacidad() {
           <p className="text-sm leading-relaxed text-stone-700">
             Todo usuario puede ejercer en forma gratuita sus derechos previstos en los
             artículos 14, 15 y 16 de la Ley N° 25.326 enviando un correo a{" "}
-            <code>privacidad@prop2.com.ar</code> adjuntando acreditación de identidad. Las
-            solicitudes de acceso se responden en un plazo máximo de 10 días corridos, y
-            las de rectificación o supresión en 5 días hábiles.
+            <code>prop2inmuebles@gmail.com</code> adjuntando acreditación de identidad.
+            Las solicitudes de acceso se responden en un plazo máximo de 10 días corridos,
+            y las de rectificación o supresión en 5 días hábiles.
           </p>
         </section>
 
@@ -223,10 +223,10 @@ export default function PaginaPrivacidad() {
         <div>
           Canal directo de privacidad:{" "}
           <a
-            href="mailto:privacidad@prop2.com.ar"
+            href="mailto:prop2inmuebles@gmail.com"
             className="font-medium text-stone-900 underline"
           >
-            privacidad@prop2.com.ar
+            prop2inmuebles@gmail.com
           </a>
         </div>
         <div className="flex items-center gap-4">

@@ -85,7 +85,7 @@ Queda terminantemente prohibido mantener publicaciones activas sobre inmuebles q
 5.3. El usuario concede a Prop² una licencia no exclusiva, gratuita, mundial y durante la vigencia de la publicación para almacenar, procesar, redimensionar, reproducir y exhibir dichas imágenes en la Plataforma, en buscadores y en redes sociales con el único fin de publicitar el anuncio.
 
 5.4. **Procedimiento de Denuncia y Baja ("Notice and Take Down"):**  
-Si cualquier titular de derechos considera que una publicación o fotografía exhibida en Prop² vulnera sus derechos de autor, propiedad intelectual o imagen personal, podrá notificarlo a `legal@prop2.com.ar` adjuntando copia que acredite su titularidad. Prop² procederá a la baja cautelar del contenido infractor de manera diligente.
+Si cualquier titular de derechos considera que una publicación o fotografía exhibida en Prop² vulnera sus derechos de autor, propiedad intelectual o imagen personal, podrá notificarlo a `prop2inmuebles@gmail.com` adjuntando copia que acredite su titularidad. Prop² procederá a la baja cautelar del contenido infractor de manera diligente.
 
 ---
 
@@ -164,5 +164,4 @@ Prop² podrá modificar los presentes Términos en cualquier momento, publicando
 
 Para consultas legales o notificaciones relativas a estos Términos:
 
-- **Correo electrónico legal:** `legal@prop2.com.ar`
-- **Soporte y contacto general:** `soporte@prop2.com.ar`
+- **Correo electrónico de contacto y legal:** `prop2inmuebles@gmail.com`

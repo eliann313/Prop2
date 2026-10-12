@@ -291,10 +291,10 @@ export default function PaginaTerminos() {
         <div>
           ¿Consultas sobre estos términos? Escribinos a{" "}
           <a
-            href="mailto:legal@prop2.com.ar"
+            href="mailto:prop2inmuebles@gmail.com"
             className="font-medium text-stone-900 underline"
           >
-            legal@prop2.com.ar
+            prop2inmuebles@gmail.com
           </a>
         </div>
         <div className="flex items-center gap-4">
