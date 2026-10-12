@@ -71,7 +71,18 @@ function sinVacios(entorno: NodeJS.ProcessEnv): Record<string, string | undefine
   );
 }
 
-const resultado = esquemaEnv.safeParse(sinVacios(process.env));
+const entorno = sinVacios(process.env);
+const entornoParaValidar = {
+  ...entorno,
+  // v0 previews may not expose the project secret to the local sandbox. This fallback is
+  // intentionally limited to non-production and must never be used for deployed sessions.
+  AUTH_SECRET:
+    entorno.AUTH_SECRET ??
+    (entorno.NODE_ENV === "production"
+      ? undefined
+      : "v0-development-only-auth-secret-change-before-production"),
+};
+const resultado = esquemaEnv.safeParse(entornoParaValidar);
 
 if (!resultado.success) {
   const detalle = resultado.error.issues
