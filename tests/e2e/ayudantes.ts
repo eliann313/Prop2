@@ -28,6 +28,18 @@ export async function cerrarBase() {
   await pool.end();
 }
 
+/** Consulta persistida en Postgres de test, sin enviar emails externos. */
+export async function crearConsultaDePrueba(publicacionId: string, nombre: string) {
+  const id = randomUUID();
+  await pool.query(
+    `INSERT INTO "mensaje_contacto"
+      (id, publicacion_id, nombre_contacto, email_contacto, mensaje, medio_contacto)
+     VALUES ($1, $2, $3, 'interesada@example.com', 'Quiero coordinar una visita.', 'formulario')`,
+    [id, publicacionId, nombre],
+  );
+  return id;
+}
+
 async function idDeUsuario(email: string): Promise<string> {
   const { rows } = await pool.query<{ id: string }>(
     'SELECT id FROM "usuario" WHERE email = $1',
@@ -57,10 +69,23 @@ export async function linkDeVerificacion(email: string): Promise<string> {
   await pool.query(
     `INSERT INTO "token_verificacion" (id, usuario_id, token_hash, tipo, expira_en)
      VALUES ($1, $2, $3, 'verificacion_email', $4)`,
-    [randomUUID(), usuarioId, tokenHash, expiraEn],
+    // La columna es timestamp sin zona. ISO UTC evita que pg aplique el huso local de Windows.
+    [randomUUID(), usuarioId, tokenHash, expiraEn.toISOString()],
   );
 
   return `/verificar-email?token=${encodeURIComponent(tokenEnClaro)}`;
+}
+
+/** Link aislado para probar el navegador; la emisión y el envío reales se cubren en integración. */
+export async function linkDeRecuperacion(email: string): Promise<string> {
+  const usuarioId = await idDeUsuario(email);
+  const { tokenEnClaro, tokenHash, expiraEn } = generarToken("recuperacion_password");
+  await pool.query(
+    `INSERT INTO "token_verificacion" (id, usuario_id, token_hash, tipo, expira_en)
+     VALUES ($1, $2, $3, 'recuperacion_password', $4)`,
+    [randomUUID(), usuarioId, tokenHash, expiraEn.toISOString()],
+  );
+  return `/restablecer-password?token=${encodeURIComponent(tokenEnClaro)}`;
 }
 
 /**
@@ -103,6 +128,7 @@ export async function crearPublicacionActiva(
     ciudad: string;
     precio: number;
     operacion: "venta" | "alquiler";
+    descripcion?: string;
   },
 ) {
   const usuarioId = await idDeUsuario(emailDelVendedor);
@@ -122,7 +148,8 @@ export async function crearPublicacionActiva(
       id,
       usuarioId,
       datos.titulo,
-      "Departamento luminoso con balcón al frente, cocina integrada y placares empotrados.",
+      datos.descripcion ??
+        "Departamento luminoso con balcón al frente, cocina integrada y placares empotrados.",
       datos.operacion,
       datos.precio,
       datos.ciudad,
@@ -141,6 +168,25 @@ export async function publicacionesActivasDe(email: string) {
     [email],
   );
   return rows;
+}
+
+/** Dos imágenes de fixture; el navegador intercepta Cloudinary con fotos incluidas en el repo. */
+export async function agregarFotosDePrueba(publicacionId: string) {
+  for (let orden = 0; orden < 2; orden++) {
+    await pool.query(
+      `INSERT INTO "imagen_publicacion"
+       (id, publicacion_id, public_id, url, orden, es_portada)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        randomUUID(),
+        publicacionId,
+        `ui/foto-${orden}`,
+        `https://res.cloudinary.com/demo-e2e/image/upload/ui/foto-${orden}.jpg`,
+        orden,
+        orden === 0,
+      ],
+    );
+  }
 }
 
 export async function mensajesDePublicacion(publicacionId: string) {

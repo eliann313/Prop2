@@ -3,6 +3,7 @@
 import { schemaReenviarVerificacion } from "@/features/auth/authSchemas";
 import { emitirYEnviarVerificacionEmail } from "@/features/auth/emisionDeTokens";
 import { buscarUsuarioPorEmail } from "@/features/usuarios/usuarioRepository";
+import { emailDeAuthDisponible } from "@/shared/lib/emailSender";
 import { consumirIntento } from "@/shared/lib/rateLimiters";
 import { exito, fallo, type ResultadoAccion } from "@/shared/types/resultadoAccion";
 
@@ -17,6 +18,10 @@ export async function reenviarVerificacion(entrada: unknown): Promise<ResultadoA
   }
 
   const { email } = validacion.data;
+
+  if (!emailDeAuthDisponible) {
+    return fallo("El servicio de emails no está disponible. Probá de nuevo más tarde.");
+  }
 
   // Este endpoint manda emails: sin límite, sirve para bombardear la casilla de un tercero y
   // para agotar la cuota gratuita de Resend (8.4, 8.10).

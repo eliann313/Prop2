@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
+import { MapPin } from "lucide-react";
 
 import { obtenerUsuarioActual } from "@/features/auth/sessionQueries";
 import { FormularioDeConsulta } from "@/features/contacto/components/FormularioDeConsulta";
@@ -45,7 +46,11 @@ const MapaDeUbicacion = dynamic(
     import("@/features/publicaciones/components/MapaDeUbicacion").then(
       (modulo) => modulo.MapaDeUbicacion,
     ),
-  { loading: () => <div className="bg-muted h-72 w-full rounded-lg" /> },
+  {
+    loading: () => (
+      <div className="bg-muted h-[clamp(16rem,32vw,24rem)] w-full rounded-xl" />
+    ),
+  },
 );
 
 // Esta página se sirve SSR y no con el ISR de 60 minutos que pide la tabla de 9.1. Es una
@@ -224,176 +229,211 @@ export default async function PaginaDetalle(props: PageProps<"/publicaciones/[id
   // corazón, y además llegan por streaming, así que acá todavía no se conocen.
   return (
     <FavoritosProvider idsEnPagina={[publicacion.id]}>
-      <article className="grid gap-8">
-        <RegistrarVista publicacionId={publicacion.id} />
-        {/* JSON-LD de 9.1. Es el único `dangerouslySetInnerHTML` del proyecto y la excepción que
+      <div className="min-h-full bg-[#faf8f6]">
+        <article className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8 lg:px-8">
+          <RegistrarVista publicacionId={publicacion.id} />
+          {/* JSON-LD de 9.1. Es el único `dangerouslySetInnerHTML` del proyecto y la excepción que
           contempla 8.1: un `<script>` no puede recibir su contenido como children de React,
           porque React escaparía las comillas a entidades y el JSON dejaría de parsear.
           El contenido va por `serializarJsonLd`, que neutraliza el `</script>` que un vendedor
           podría meter en el título — ver el porqué en datosEstructurados.ts. */}
-        {/* eslint-disable-next-line react/no-danger -- ver comentario de arriba */}
-        <script type="application/ld+json" dangerouslySetInnerHTML={htmlJsonLd} />
-        <Link
-          href={RUTAS.publicaciones}
-          className="text-muted-foreground text-sm underline underline-offset-4"
-        >
-          ← Volver a la búsqueda
-        </Link>
+          {/* eslint-disable-next-line react/no-danger -- ver comentario de arriba */}
+          <script type="application/ld+json" dangerouslySetInnerHTML={htmlJsonLd} />
+          <Link
+            href={RUTAS.publicaciones}
+            className="text-muted-foreground hover:text-bordeaux focus-visible:ring-bordeaux inline-flex w-fit items-center gap-1 rounded-sm text-sm underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+          >
+            ← Volver a la búsqueda
+          </Link>
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_320px] lg:items-start">
-          <div className="grid gap-6">
-            <GaleriaDeFotos
-              fotos={publicacion.imagenes.map((imagen) => ({
-                id: imagen.id,
-                url: imagen.url,
-                urlThumbnail: imagen.urlThumbnail,
-              }))}
-              titulo={publicacion.titulo}
-            />
-
-            <header className="grid gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">
-                  {publicacion.operacion === "venta" ? "Venta" : "Alquiler"}
-                </Badge>
-                <Badge variant="outline">
-                  {ETIQUETAS_TIPO_INMUEBLE[publicacion.tipoInmueble]}
-                </Badge>
-              </div>
-              <h1 className="text-2xl font-semibold tracking-tight">
-                {publicacion.titulo}
-              </h1>
-              <p className="text-muted-foreground">
+          <header className="grid gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="bg-bordeaux hover:bg-bordeaux border-0 text-white">
+                {publicacion.operacion === "venta" ? "Venta" : "Alquiler"}
+              </Badge>
+              <Badge
+                className="text-bordeaux border-[#bd9a55]/50 bg-[#ffc300]/15 hover:bg-[#ffc300]/15"
+                variant="outline"
+              >
+                {ETIQUETAS_TIPO_INMUEBLE[publicacion.tipoInmueble]}
+              </Badge>
+            </div>
+            <h1 className="text-bordeaux font-heading text-3xl leading-tight font-semibold tracking-tight break-words sm:text-4xl">
+              {publicacion.titulo}
+            </h1>
+            <p className="text-muted-foreground flex items-start gap-2 text-sm sm:text-base">
+              <MapPin
+                aria-hidden="true"
+                className="mt-0.5 size-4 shrink-0 text-[#bd9a55]"
+              />
+              <span>
                 {/* La dirección exacta solo se muestra si el vendedor la habilitó (3.4). */}
                 {publicacion.direccion ? `${publicacion.direccion}, ` : ""}
                 {publicacion.barrio ? `${publicacion.barrio}, ` : ""}
                 {publicacion.ciudad}, {publicacion.provincia}
-              </p>
-            </header>
+              </span>
+            </p>
+          </header>
 
-            <Separator />
-
-            <section className="grid gap-3">
-              <h2 className="text-lg font-medium">Descripción</h2>
-              {/* whitespace-pre-line respeta los saltos de línea que escribió el vendedor sin
-                interpretar HTML: el texto entra como texto, nunca como markup (8.1). */}
-              <p className="max-w-prose text-sm whitespace-pre-line">
-                {publicacion.descripcion}
-              </p>
-            </section>
-
-            <section className="grid gap-3">
-              <h2 className="text-lg font-medium">Ficha técnica</h2>
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
-                {ficha.map(([etiqueta, valor]) => (
-                  <div key={String(etiqueta)} className="grid gap-0.5">
-                    <dt className="text-muted-foreground text-xs">{etiqueta}</dt>
-                    <dd className="font-medium">{valor}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-
-            <section className="grid gap-3">
-              <h2 className="text-lg font-medium">Ubicación</h2>
-              <MapaDeUbicacion
-                latitud={Number(publicacion.latitud)}
-                longitud={Number(publicacion.longitud)}
-                exacta={publicacion.direccion !== null}
-                etiqueta={publicacion.titulo}
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+            <div className="min-w-0 lg:col-start-1 lg:row-start-1">
+              <GaleriaDeFotos
+                fotos={publicacion.imagenes.map((imagen) => ({
+                  id: imagen.id,
+                  url: imagen.url,
+                  urlThumbnail: imagen.urlThumbnail,
+                }))}
+                titulo={publicacion.titulo}
               />
-              {publicacion.direccion === null ? (
-                <p className="text-muted-foreground text-xs">
-                  El vendedor eligió no publicar la dirección exacta: el mapa muestra la
-                  zona.
-                </p>
-              ) : null}
-            </section>
+            </div>
 
-            {servicios.length + comodidades.length > 0 ? (
-              <section className="grid gap-3">
-                <h2 className="text-lg font-medium">Servicios y comodidades</h2>
-                <div className="flex flex-wrap gap-2">
-                  {[...servicios, ...comodidades].map((caracteristica) => (
-                    <Badge key={caracteristica.nombre} variant="outline">
-                      {caracteristica.nombre}
-                    </Badge>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-          </div>
-
-          <aside className="grid gap-4 rounded-lg border p-5 lg:sticky lg:top-6">
-            <div className="flex items-start justify-between gap-3">
-              <div className="grid gap-1">
-                <p className="text-2xl font-semibold">
-                  {formatearPrecio(precio, moneda)}
-                  {publicacion.operacion === "alquiler" ? (
-                    <span className="text-muted-foreground text-base font-normal">
-                      {" "}
-                      / mes
-                    </span>
-                  ) : null}
-                </p>
-                {formatearEquivalencia(precio, moneda, cotizacion) ? (
-                  <p className="text-muted-foreground text-sm">
-                    {formatearEquivalencia(precio, moneda, cotizacion)}
+            <aside className="grid min-w-0 gap-5 rounded-2xl border border-t-4 border-[#e9e4e0] border-t-[#bd9a55] bg-white p-5 shadow-[0_12px_32px_rgba(59,16,48,0.07)] sm:p-6 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+              <div className="flex items-start justify-between gap-3">
+                <div className="grid min-w-0 gap-1">
+                  <p className="text-bordeaux text-2xl font-semibold tracking-tight [overflow-wrap:anywhere] sm:text-3xl">
+                    {formatearPrecio(precio, moneda)}
+                    {publicacion.operacion === "alquiler" ? (
+                      <span className="text-muted-foreground text-base font-normal">
+                        {" "}
+                        / mes
+                      </span>
+                    ) : null}
                   </p>
-                ) : null}
+                  {formatearEquivalencia(precio, moneda, cotizacion) ? (
+                    <p className="text-muted-foreground text-sm">
+                      {formatearEquivalencia(precio, moneda, cotizacion)}
+                    </p>
+                  ) : null}
+                </div>
+
+                <BotonFavorito
+                  publicacionId={publicacion.id}
+                  volverA={rutaCanonica}
+                  variante="linea"
+                />
               </div>
 
-              <BotonFavorito
-                publicacionId={publicacion.id}
-                volverA={rutaCanonica}
-                variante="linea"
-              />
+              <Separator className="bg-[#e9e4e0]" />
+
+              <div className="grid gap-1 text-sm">
+                <p className="text-muted-foreground text-xs">Publicado por</p>
+                <p className="font-medium">{publicacion.usuario.name ?? "Propietario"}</p>
+              </div>
+
+              {whatsapp ? (
+                <Button asChild className="bg-bordeaux text-white hover:bg-[#3b1030]">
+                  {/* rel noopener: sin esto la pestaña de WhatsApp puede tocar window.opener. */}
+                  <a href={whatsapp} target="_blank" rel="noopener noreferrer">
+                    Consultar por WhatsApp
+                  </a>
+                </Button>
+              ) : null}
+
+              <div id="consultar" className="grid scroll-mt-6 gap-3">
+                <p className="text-bordeaux text-sm font-semibold">
+                  Consultar por este inmueble
+                </p>
+                <div className="[&_button]:bg-bordeaux [&_button]:text-white [&_button:focus-visible]:ring-[#ffc300] [&_button:hover]:bg-[#3b1030]">
+                  <FormularioDeConsulta
+                    publicacionId={publicacion.id}
+                    tituloPublicacion={publicacion.titulo}
+                    usuario={
+                      usuario
+                        ? { nombre: usuario.name ?? "", email: usuario.email ?? "" }
+                        : null
+                    }
+                  />
+                </div>
+              </div>
+
+              <p className="text-muted-foreground border-t border-[#f0ece7] pt-3 text-xs">
+                {publicacion.vistas} visitas
+              </p>
+            </aside>
+
+            <div className="grid min-w-0 gap-5 lg:col-start-1 lg:row-start-2 lg:gap-6">
+              <section className="grid gap-3 rounded-2xl border border-[#e9e4e0] bg-white p-5 sm:p-6">
+                <h2 className="text-bordeaux font-heading text-xl font-semibold">
+                  Descripción
+                </h2>
+                {/* whitespace-pre-line respeta los saltos de línea que escribió el vendedor sin
+                interpretar HTML: el texto entra como texto, nunca como markup (8.1). */}
+                <p className="text-foreground/85 max-w-prose text-sm leading-7 [overflow-wrap:anywhere] whitespace-pre-line sm:text-base">
+                  {publicacion.descripcion}
+                </p>
+              </section>
+
+              <section className="grid gap-4 rounded-2xl border border-[#e9e4e0] bg-white p-5 sm:p-6">
+                <h2 className="text-bordeaux font-heading text-xl font-semibold">
+                  Ficha técnica
+                </h2>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-0 sm:grid-cols-3 sm:gap-x-6">
+                  {ficha.map(([etiqueta, valor]) => (
+                    <div
+                      key={String(etiqueta)}
+                      className="grid gap-1 border-b border-[#f0ece7] py-3"
+                    >
+                      <dt className="text-muted-foreground text-xs">{etiqueta}</dt>
+                      <dd className="text-foreground text-sm font-medium">{valor}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+
+              <section className="grid gap-4 rounded-2xl border border-[#e9e4e0] bg-white p-5 sm:p-6">
+                <div>
+                  <h2 className="text-bordeaux font-heading text-xl font-semibold">
+                    Ubicación
+                  </h2>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    {publicacion.barrio
+                      ? `${publicacion.barrio}, ${publicacion.ciudad}`
+                      : `${publicacion.ciudad}, ${publicacion.provincia}`}
+                  </p>
+                </div>
+                <MapaDeUbicacion
+                  latitud={Number(publicacion.latitud)}
+                  longitud={Number(publicacion.longitud)}
+                  exacta={publicacion.direccion !== null}
+                  etiqueta={publicacion.titulo}
+                />
+                {publicacion.direccion === null ? (
+                  <p className="text-muted-foreground text-xs">
+                    El vendedor eligió no publicar la dirección exacta: el mapa muestra la
+                    zona.
+                  </p>
+                ) : null}
+              </section>
+
+              {servicios.length + comodidades.length > 0 ? (
+                <section className="grid gap-4 rounded-2xl border border-[#e9e4e0] bg-white p-5 sm:p-6">
+                  <h2 className="text-bordeaux font-heading text-xl font-semibold">
+                    Servicios y comodidades
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    {[...servicios, ...comodidades].map((caracteristica) => (
+                      <Badge
+                        key={caracteristica.nombre}
+                        variant="outline"
+                        className="text-foreground border-[#e9e4e0] bg-[#faf8f6] px-3 py-1.5"
+                      >
+                        {caracteristica.nombre}
+                      </Badge>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
             </div>
+          </div>
 
-            <Separator />
-
-            <div className="grid gap-1 text-sm">
-              <p className="text-muted-foreground text-xs">Publica</p>
-              <p className="font-medium">{publicacion.usuario.name ?? "Propietario"}</p>
-            </div>
-
-            {whatsapp ? (
-              <Button asChild>
-                {/* rel noopener: sin esto la pestaña de WhatsApp puede tocar window.opener. */}
-                <a href={whatsapp} target="_blank" rel="noopener noreferrer">
-                  Consultar por WhatsApp
-                </a>
-              </Button>
-            ) : null}
-
-            {/* Email directo como tercera vía (6.6): quien prefiere su propio cliente de correo
-              no debería estar obligado a usar el formulario. El mailto va contra el email de
-              quien consulta, no contra el del vendedor: la dirección del vendedor nunca se
-              publica en el HTML. */}
-            <div id="consultar" className="grid gap-3">
-              <p className="text-sm font-medium">Consultar por este inmueble</p>
-              <FormularioDeConsulta
-                publicacionId={publicacion.id}
-                tituloPublicacion={publicacion.titulo}
-                usuario={
-                  usuario
-                    ? { nombre: usuario.name ?? "", email: usuario.email ?? "" }
-                    : null
-                }
-              />
-            </div>
-
-            <p className="text-muted-foreground text-xs">{publicacion.vistas} visitas</p>
-          </aside>
-        </div>
-
-        {/* En Suspense: es la consulta mas cara de la pagina y la menos urgente (9.2). Sin
+          {/* En Suspense: es la consulta mas cara de la pagina y la menos urgente (9.2). Sin
             esto, la ficha del inmueble espera a que termine una busqueda de similares que
             vive al final y fuera de la primera pantalla. */}
-        <Suspense fallback={<SimilaresCargando />}>
-          <PublicacionesSimilares publicacion={publicacion} cotizacion={cotizacion} />
-        </Suspense>
-      </article>
+          <Suspense fallback={<SimilaresCargando />}>
+            <PublicacionesSimilares publicacion={publicacion} cotizacion={cotizacion} />
+          </Suspense>
+        </article>
+      </div>
     </FavoritosProvider>
   );
 }

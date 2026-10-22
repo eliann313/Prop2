@@ -14,7 +14,11 @@ import { CampoTexto } from "@/shared/components/CampoTexto";
 import { Button } from "@/shared/components/ui/button";
 import type { ResultadoAccion } from "@/shared/types/resultadoAccion";
 
-export function FormularioRecuperarPassword() {
+type Props = {
+  emailInicial?: string;
+};
+
+export function FormularioRecuperarPassword({ emailInicial = "" }: Props) {
   const [resultado, setResultado] = useState<ResultadoAccion | null>(null);
   const [enviando, iniciarEnvio] = useTransition();
 
@@ -24,6 +28,7 @@ export function FormularioRecuperarPassword() {
     formState: { errors },
   } = useForm<DatosSolicitudRecuperacion>({
     resolver: zodResolver(schemaSolicitudRecuperacion),
+    defaultValues: { email: emailInicial },
   });
 
   function onSubmit(datos: DatosSolicitudRecuperacion) {
@@ -31,19 +36,20 @@ export function FormularioRecuperarPassword() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
       <AvisoDeAccion resultado={resultado} />
 
       <CampoTexto
         etiqueta="Email"
         type="email"
         autoComplete="email"
+        className="login-input"
         error={errors.email?.message}
         ayuda="Te enviamos un link para elegir una contraseña nueva."
         {...register("email")}
       />
 
-      <Button type="submit" disabled={enviando}>
+      <Button type="submit" disabled={enviando} className="login-submit-button">
         {enviando ? "Enviando…" : "Enviarme el link"}
       </Button>
     </form>

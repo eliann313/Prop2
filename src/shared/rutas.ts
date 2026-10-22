@@ -18,6 +18,11 @@ export const RUTAS = {
   publicaciones: "/publicaciones",
   favoritos: "/favoritos",
   dashboard: "/dashboard",
+  perfil: "/dashboard/perfil",
+  mensajes: "/dashboard/mensajes",
   admin: "/admin",
   home: "/",
+  terminos: "/terminos",
+  privacidad: "/privacidad",
+  disclaimer: "/disclaimer",
 } as const;

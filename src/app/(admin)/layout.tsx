@@ -1,11 +1,6 @@
 import { EncabezadoSitio } from "@/shared/components/EncabezadoSitio";
+import "@/shared/components/shared-components.css";
 
-/**
- * Sin cache, explícito (9.1). Hoy estas páginas ya se renderizan dinámicas porque leen la
- * sesión, pero eso es una consecuencia, no una decisión: si mañana alguien saca esa lectura de
- * una página, pasaría a servirse desde un cache COMPARTIDO — y acá se listan publicaciones y
- * usuarios ajenos. Declararlo deja la intención escrita y no dependiendo de un efecto lateral.
- */
 export const dynamic = "force-dynamic";
 
 /** Ninguna pantalla de administración tiene por qué aparecer en un buscador (9.1 / robots.ts). */

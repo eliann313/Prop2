@@ -57,9 +57,9 @@ export function MapaDeUbicacion({ latitud, longitud, exacta, etiqueta }: Props) 
       if (exacta) {
         L.circleMarker([latitud, longitud], {
           radius: 9,
-          weight: 2,
-          color: "#171717",
-          fillColor: "#171717",
+          weight: 3,
+          color: "#ffffff",
+          fillColor: "#581845",
           fillOpacity: 0.9,
         })
           .addTo(mapa)
@@ -68,8 +68,9 @@ export function MapaDeUbicacion({ latitud, longitud, exacta, etiqueta }: Props) 
         L.circle([latitud, longitud], {
           radius: RADIO_APROXIMADO,
           weight: 2,
-          color: "#171717",
-          fillOpacity: 0.12,
+          color: "#581845",
+          fillColor: "#bd9a55",
+          fillOpacity: 0.16,
         })
           .addTo(mapa)
           .bindPopup(`${etiqueta} (ubicación aproximada)`);
@@ -89,7 +90,7 @@ export function MapaDeUbicacion({ latitud, longitud, exacta, etiqueta }: Props) 
       ref={contenedor}
       role="application"
       aria-label={`Mapa de ${etiqueta}`}
-      className="h-72 w-full overflow-hidden rounded-lg border"
+      className="h-[clamp(16rem,32vw,24rem)] w-full overflow-hidden rounded-xl border border-[#e9e4e0]"
     />
   );
 }

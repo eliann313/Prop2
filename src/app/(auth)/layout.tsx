@@ -1,23 +1,37 @@
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 import { RUTAS } from "@/shared/rutas";
 
-/**
- * Layout de las pantallas de auth: centrado, sin la navegación completa del sitio (4.3).
- * Quitar el navbar acá es deliberado — en un formulario de login o registro, cada link extra
- * es una oportunidad de abandonar el flujo.
- */
 export default function LayoutAuth({ children }: { children: React.ReactNode }) {
   return (
-    <main className="flex flex-1 items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm">
+    <main className="auth-layout">
+      <header className="auth-header">
         <Link
           href={RUTAS.home}
-          className="text-muted-foreground mb-8 block text-center text-sm"
+          aria-label="Prop², volver al inicio"
+          className="auth-brand"
         >
-          Prop²
+          <span aria-hidden="true" className="auth-brand-mark">
+            <span className="auth-brand-square auth-brand-square-light" />
+            <span className="auth-brand-square auth-brand-square-gold" />
+          </span>
+          <span className="auth-brand-copy">
+            <span className="auth-brand-name">
+              PROP<sup>2</sup>
+            </span>
+            <span className="auth-brand-tagline">BIENES RAÍCES</span>
+          </span>
         </Link>
-        {children}
+      </header>
+      <div className="auth-layout-content">
+        <div className="auth-content-inner">
+          {children}
+          <Link href={RUTAS.home} className="auth-back-link">
+            <ArrowLeft />
+            Atrás
+          </Link>
+        </div>
       </div>
     </main>
   );

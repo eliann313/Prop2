@@ -13,7 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card";
-import { Separator } from "@/shared/components/ui/separator";
 import { googleHabilitado } from "@/shared/lib/serverEnv";
 
 export const metadata: Metadata = { title: "Iniciar sesión" };
@@ -21,38 +20,40 @@ export const metadata: Metadata = { title: "Iniciar sesión" };
 export default async function PaginaLogin(props: PageProps<"/login">) {
   // En Next 16 `searchParams` es una Promise: el acceso sincrónico se removió (breaking change
   // de la v15 que en la 16 dejó de tener compatibilidad temporal).
-  const { volverA } = await props.searchParams;
+  const { volverA, error } = await props.searchParams;
 
   await redirigirSiYaHaySesion();
 
   const destino = typeof volverA === "string" ? volverA : undefined;
+  const errorAuth = typeof error === "string" && error.length > 0;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Iniciar sesión</CardTitle>
-        <CardDescription>Entrá para publicar y guardar favoritos.</CardDescription>
+    <Card className="login-card">
+      <CardHeader className="login-card-header">
+        <CardTitle className="login-card-title">Iniciar sesión</CardTitle>
+        <CardDescription className="login-card-description">
+          Entrá para publicar y guardar favoritos.
+        </CardDescription>
       </CardHeader>
 
-      <CardContent className="grid gap-4">
-        <FormularioLogin volverA={destino} />
-
+      <CardContent className="login-card-content">
         {googleHabilitado ? (
           <>
-            <div className="flex items-center gap-3">
-              <Separator className="flex-1" />
-              <span className="text-muted-foreground text-xs">o</span>
-              <Separator className="flex-1" />
-            </div>
             <BotonGoogle volverA={destino} />
+            <div className="login-divider" aria-hidden="true">
+              <span />
+              <span>o</span>
+              <span />
+            </div>
           </>
         ) : null}
+        <FormularioLogin volverA={destino} errorAuth={errorAuth} />
       </CardContent>
 
-      <CardFooter>
-        <p className="text-muted-foreground text-sm">
+      <CardFooter className="login-card-footer">
+        <p className="login-signup-text">
           ¿No tenés cuenta?{" "}
-          <Link href={RUTAS.registro} className="underline underline-offset-4">
+          <Link href={RUTAS.registro} className="login-signup-link">
             Creá una
           </Link>
         </p>

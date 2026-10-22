@@ -26,6 +26,8 @@ declare module "@auth/core/types" {
   interface User {
     rol: Rol;
     estado: EstadoUsuario;
+    /** Solo viaja entre authorize y jwt para ligar la sesión a la clave que se comprobó. */
+    huellaPassword?: string;
   }
 }
 
@@ -33,5 +35,7 @@ declare module "@auth/core/jwt" {
   interface JWT {
     rol: Rol;
     estado: EstadoUsuario;
+    /** Huella SHA-256 opaca; falta en JWT anteriores al cambio y esos se revocan. */
+    huellaPassword?: string;
   }
 }

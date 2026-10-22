@@ -2,10 +2,7 @@ import { RUTAS } from "@/shared/rutas";
 import { EmailRecuperacionPassword } from "@/features/auth/emails/EmailRecuperacionPassword";
 import { EmailVerificacion } from "@/features/auth/emails/EmailVerificacion";
 import { generarToken } from "@/features/auth/services/tokenVerificacionService";
-import {
-  crearToken,
-  invalidarTokensVigentes,
-} from "@/features/auth/tokenVerificacionRepository";
+import { crearTokenReemplazandoVigentes } from "@/features/auth/tokenVerificacionRepository";
 import { enviarEmail } from "@/shared/lib/emailSender";
 import { urlAbsoluta } from "@/shared/lib/urlBase";
 
@@ -19,12 +16,14 @@ async function emitir(
   usuario: Destinatario,
   tipo: "verificacion_email" | "recuperacion_password",
 ) {
-  // Se invalidan los tokens vigentes antes de emitir el nuevo: si alguien pide tres links,
-  // solo el último debe funcionar (ver tokenVerificacionRepository).
-  await invalidarTokensVigentes(usuario.id, tipo);
-
   const { tokenEnClaro, tokenHash, expiraEn } = generarToken(tipo);
-  await crearToken({ usuarioId: usuario.id, tokenHash, tipo, expiraEn });
+  // Invalidar y crear se serializan por cuenta: dos pedidos simultáneos también dejan un solo link.
+  await crearTokenReemplazandoVigentes({
+    usuarioId: usuario.id,
+    tokenHash,
+    tipo,
+    expiraEn,
+  });
 
   return tokenEnClaro;
 }

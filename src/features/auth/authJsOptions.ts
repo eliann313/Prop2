@@ -7,9 +7,9 @@ import { RUTAS } from "@/shared/rutas";
  * Opciones de Auth.js que NO dependen de Prisma ni de los providers.
  *
  * Está separado de `authJsInstance.ts` a propósito: `proxy.ts` corre en cada request que
- * matchea, y solo necesita leer y validar el JWT. Si importara la instancia completa se
- * arrastraría el cliente de Prisma y el adapter a ese camino caliente, sumando peso de arranque
- * para hacer algo que no requiere tocar la base.
+ * matchea, y solo necesita leer el JWT para decisiones optimistas de routing. La revocación por
+ * cambios de credencial se valida en la instancia completa, cerca de las páginas/datos. Si
+ * importara esa instancia acá se arrastraría Prisma y el adapter a ese camino caliente.
  */
 export const authJsOptions = {
   secret: env.AUTH_SECRET,

@@ -30,9 +30,6 @@ const RUTAS_PROTEGIDAS: { prefijo: string; roles?: readonly string[] }[] = [
   { prefijo: RUTAS.favoritos },
 ];
 
-/** Páginas de auth: si ya hay sesión, no tiene sentido mostrarlas. */
-const RUTAS_SOLO_ANONIMOS: readonly string[] = [RUTAS.login, RUTAS.registro];
-
 /**
  * Limita el listado de búsqueda por IP (8.10).
  *
@@ -65,7 +62,14 @@ async function limitarBusqueda(request: NextRequest): Promise<NextResponse | nul
  * que llevan nonce— olvidarse de una la dejaría con la política débil sin que nadie lo note.
  */
 function esRutaCacheable(pathname: string): boolean {
-  if (pathname === RUTAS.home) return true;
+  if (
+    pathname === RUTAS.home ||
+    pathname === RUTAS.terminos ||
+    pathname === RUTAS.privacidad ||
+    pathname === RUTAS.disclaimer
+  ) {
+    return true;
+  }
   // El detalle (`/publicaciones/<id>`), pero no el listado (`/publicaciones`), que depende de
   // los filtros de la URL y ya se renderiza dinámico.
   return pathname.startsWith(`${RUTAS.publicaciones}/`);
@@ -108,10 +112,6 @@ export const proxy = auth(async (request) => {
   if (pathname === RUTAS.publicaciones) {
     const respuesta = await limitarBusqueda(request);
     if (respuesta) return conCsp(respuesta);
-  }
-
-  if (sesion && RUTAS_SOLO_ANONIMOS.some((ruta) => pathname.startsWith(ruta))) {
-    return conCsp(NextResponse.redirect(new URL(RUTAS.dashboard, request.nextUrl)));
   }
 
   const protegida = RUTAS_PROTEGIDAS.find(({ prefijo }) => pathname.startsWith(prefijo));

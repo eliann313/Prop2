@@ -13,7 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card";
-import { Separator } from "@/shared/components/ui/separator";
 import { googleHabilitado } from "@/shared/lib/serverEnv";
 
 export const metadata: Metadata = { title: "Crear cuenta" };
@@ -22,33 +21,32 @@ export default async function PaginaRegistro() {
   await redirigirSiYaHaySesion();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Crear cuenta</CardTitle>
-        <CardDescription>
+    <Card className="login-card registration-card">
+      <CardHeader className="login-card-header">
+        <CardTitle className="login-card-title">Crear cuenta</CardTitle>
+        <CardDescription className="login-card-description">
           Es gratis. Vas a poder publicar inmuebles y guardar favoritos.
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="grid gap-4">
-        <FormularioRegistro />
-
+      <CardContent className="login-card-content">
         {googleHabilitado ? (
           <>
-            <div className="flex items-center gap-3">
-              <Separator className="flex-1" />
-              <span className="text-muted-foreground text-xs">o</span>
-              <Separator className="flex-1" />
-            </div>
             <BotonGoogle />
+            <div className="login-divider">
+              <span />
+              <span>o</span>
+              <span />
+            </div>
           </>
         ) : null}
+        <FormularioRegistro />
       </CardContent>
 
-      <CardFooter>
-        <p className="text-muted-foreground text-sm">
+      <CardFooter className="login-card-footer">
+        <p className="login-signup-text">
           ¿Ya tenés cuenta?{" "}
-          <Link href={RUTAS.login} className="underline underline-offset-4">
+          <Link href={RUTAS.login} className="login-signup-link">
             Iniciá sesión
           </Link>
         </p>

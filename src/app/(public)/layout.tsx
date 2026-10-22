@@ -1,4 +1,7 @@
 import { EncabezadoSitio } from "@/shared/components/EncabezadoSitio";
+import { PieDePagina } from "@/shared/components/PieDePagina";
+import "@/shared/components/shared-components.css";
+import "./busqueda.css";
 
 /**
  * Layout del route group público. Los paréntesis del nombre hacen que "(public)" NO aparezca
@@ -6,9 +9,10 @@ import { EncabezadoSitio } from "@/shared/components/EncabezadoSitio";
  */
 export default function LayoutPublico({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <div className="text-foreground flex min-h-screen flex-col bg-white">
       <EncabezadoSitio />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">{children}</main>
-    </>
+      <main className="w-full flex-1">{children}</main>
+      <PieDePagina />
+    </div>
   );
 }

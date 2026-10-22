@@ -69,7 +69,12 @@ export async function PublicacionesSimilares({ publicacion, cotizacion }: Props)
  */
 export function SimilaresCargando() {
   return (
-    <section className="grid gap-4 border-t pt-8">
+    <section
+      className="grid gap-4 border-t pt-8"
+      role="status"
+      aria-label="Cargando publicaciones similares"
+      aria-busy="true"
+    >
       <div className="bg-muted h-7 w-64 animate-pulse rounded" />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[0, 1, 2].map((posicion) => (

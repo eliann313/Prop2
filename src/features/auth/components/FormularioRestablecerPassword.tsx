@@ -44,7 +44,10 @@ export function FormularioRestablecerPassword({ token }: Props) {
     return (
       <div className="grid gap-4">
         <AvisoDeAccion resultado={resultado} />
-        <Link href={RUTAS.login} className="text-sm underline underline-offset-4">
+        <Link
+          href={RUTAS.login}
+          className="login-submit-button inline-flex items-center justify-center"
+        >
           Ir a iniciar sesión
         </Link>
       </div>
@@ -52,7 +55,7 @@ export function FormularioRestablecerPassword({ token }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
       <AvisoDeAccion resultado={resultado} />
 
       <input type="hidden" {...register("token")} />
@@ -73,9 +76,15 @@ export function FormularioRestablecerPassword({ token }: Props) {
         {...register("confirmacion")}
       />
 
-      <Button type="submit" disabled={enviando}>
+      <Button type="submit" disabled={enviando} className="login-submit-button">
         {enviando ? "Guardando…" : "Guardar contraseña"}
       </Button>
+      <p className="reset-help-text">
+        ¿El enlace venció o no funciona?{" "}
+        <Link href={RUTAS.recuperarPassword} className="login-signup-link">
+          Pedí uno nuevo
+        </Link>
+      </p>
     </form>
   );
 }
