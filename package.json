@@ -35,13 +35,13 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@playwright/test": "^1.65.0",
+    "@playwright/test": "^1.65.1",
     "@prisma/adapter-pg": "^7.10.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
-    "@testing-library/user-event": "^14.6.10",
+    "@testing-library/user-event": "^14.6.13",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^26.6.6",
     "@types/nodemailer": "^8.0.2",
@@ -50,15 +50,15 @@
     "@types/react-dom": "^19",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitejs/plugin-react": "^6.3.0",
-    "@vitest/coverage-v8": "5.1.0",
+    "@vitest/coverage-v8": "5.1.1",
     "dotenv": "^18.0.10",
     "eslint": "^9.39.5",
     "eslint-config-next": "16.4.6",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-regexp": "^3.3.3",
     "husky": "^9.1.7",
-    "jsdom": "^31.0.0",
-    "lint-staged": "^17.6.0",
+    "jsdom": "^31.0.1",
+    "lint-staged": "^17.6.1",
     "pg": "^8.23.1",
     "prettier": "^3.10.1",
     "prettier-plugin-tailwindcss": "^0.8.1",
@@ -68,7 +68,7 @@
     "tsx": "^4.23.15",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "8.3.8",
-    "vitest": "5.1.0"
+    "vitest": "5.1.1"
   },
   "name": "prop2",
   "overrides": {
